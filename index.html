@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Website</title>
+    
+</head>
+<body>
+    <div class="clock-wrapper">
+        <div id="clock" class="clock"></div>
+    </div>
+    <div class="search-wrapper">
+        <form action="https://www.google.com/search" method="GET">
+            <input type="text" name="q" class="search-box" placeholder="Google" autocomplete="off" style="text-align:center;">
+        </form>
+    </div>
+    <div class="button-container">
+        <button class="round-edge-button" id="schedule-button">Schedule</button>
+        <button class="round-edge-button" id="unicode-button">Unicode</button>
+        <button class="round-edge-button" id="photo-button">Images</button>
+        <div class="dropdown">
+            <button class="round-edge-button dropbtn" id="manageDropdownBtn">Manage Links</button>
+            <!-- Toggled menu -->
+            <div class="dropdown-content" id="manageDropdownContent">
+                <ul>
+                    <li>
+                        <button class="manageDropdown-sub" id="modifyLinkBtn">Modify</button>
+                    </li>
+                    <li>
+                        <button class="manageDropdown-sub" id="removeLinkBtn">Remove Link</button>
+                    </li>
+        
+                    <!-- Column submenu -->
+                    <li class="dropdown-submenu">
+                        <button class="manageDropdown-sub" id="columnsSubmenuBtn">Columns</button>
+                        <ul class="dropdown-submenu-content" id="columnsSubmenuContent">
+                            <li>
+                                <button class="manageDropdown-sub" id="addColumnBtn">Add Column</button>
+                            </li>
+                            <li>
+                                <button class="manageDropdown-sub" id="removeColumnBtn">Remove Column</button>
+                            </li>
+                        </ul>
+                    </li>
+        
+                    <!-- Rows submenu -->
+                    <li class="dropdown-submenu">
+                        <button class="manageDropdown-sub" id="rowsSubmenuBtn">Rows</button>
+                        <ul class="dropdown-submenu-content" id="rowsSubmenuContent">
+                            <li>
+                                <button class="manageDropdown-sub" id="addRowBtn">Add Row</button>
+                            </li>
+                            <li>
+                                <button class="manageDropdown-sub" id="removeRowBtn">Remove Row</button>
+                            </li>
+                        </ul>
+                    </li>
+        
+                    <li>
+                        <button class="manageDropdown-sub"   id="resetAllBtn">Reset All</button>
+                    </li>
+                    <li>
+                        <button class="manageDropdown-sub2"  id="toggleOccupiedBtn">Occupied: OFF</button>
+                    </li>
+                    <li>
+                        <button class="manageDropdown-sub2"  id="toggleDialogBtn">Dialogs: ON</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    <div id="dynamic-rows"></div>
+</body>
+</html>
