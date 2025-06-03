@@ -1,14 +1,20 @@
 :root {
   --primary: #0d5eaf;
   --white: #ffffff;
-  --light-gray: #f9f9f9;
+  --light-gray: #f0f0f0;
   --text: #222222;
 }
 
-body {
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
   font-family: 'Segoe UI', sans-serif;
-  background: var(--light-gray);
+  background: var(--white);
   color: var(--text);
 }
 

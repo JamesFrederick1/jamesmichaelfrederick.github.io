@@ -1,14 +1,20 @@
 :root {
   --primary: #0d5eaf;
   --white: #ffffff;
-  --light-gray: #f9f9f9;
+  --light-gray: #f0f0f0;
   --text: #222222;
 }
 
-body {
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  height: 100%;
   font-family: 'Segoe UI', sans-serif;
-  background: var(--light-gray);
+  background: var(--white);
   color: var(--text);
 }
 
@@ -103,4 +109,33 @@ a {
 
 a:hover {
   color: #083b73;
+}
+.results-image-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.results-image-section h2 {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.results-image-section p {
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 1.2rem;
+}
+
+.results-image-wrapper {
+  max-width: 100%;
+  padding: 1rem;
+  background: var(--light-gray);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.results-image-wrapper img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
 }
