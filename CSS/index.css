@@ -34,7 +34,11 @@ body, html {
   font-weight: bold;
   color: var(--primary);
 }
-
+.logo {
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none; 
+}
 .navbar nav a {
   margin: 0 12px;
   text-decoration: none;
@@ -129,9 +133,4 @@ h1 {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-nav a.active {
-  font-weight: bold;
-  border-bottom: 2px solid;
-  pointer-events: none; 
 }
