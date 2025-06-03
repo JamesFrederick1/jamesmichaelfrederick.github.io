@@ -1,0 +1,106 @@
+:root {
+  --primary: #0d5eaf;
+  --white: #ffffff;
+  --light-gray: #f9f9f9;
+  --text: #222222;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--light-gray);
+  color: var(--text);
+}
+
+/* Navbar same as before */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: var(--white);
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 2rem;
+  z-index: 10;
+}
+
+.navbar .logo a {
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.4rem;
+}
+
+.navbar nav a {
+  margin: 0 12px;
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 500;
+  position: relative;
+}
+
+.navbar nav a:hover {
+  color: #083b73;
+}
+
+.navbar nav a::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+.navbar nav a:hover::after {
+  width: 100%;
+}
+
+/* Research content */
+.research-section {
+  padding: 120px 20px 60px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--white);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+h1 {
+  color: var(--primary);
+  font-size: 2.3rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  margin-top: 2rem;
+  color: var(--primary);
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+ul li {
+  margin-bottom: 10px;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+a:hover {
+  color: #083b73;
+}
