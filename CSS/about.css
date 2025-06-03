@@ -98,3 +98,8 @@ p.fun {
   font-style: italic;
   color: #444;
 }
+nav a.active {
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none; 
+}

@@ -101,3 +101,8 @@ ul {
   font-size: 1.05rem;
   line-height: 1.8;
 }
+nav a.active {
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none; 
+}
