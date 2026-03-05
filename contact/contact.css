@@ -106,3 +106,6 @@ html, body{
 .contact-gate .gate-btn:hover{
   background: #083b73;
 }
+
+#contactGate { display: none; }
+#contactFormWrap { display: none; }

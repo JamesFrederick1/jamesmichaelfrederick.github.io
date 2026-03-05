@@ -1,79 +1,41 @@
 // /shared/signup.js
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getAuth,
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signOut,
   deleteUser,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
 import {
-  getFirestore,
   doc,
   runTransaction,
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDoXwHKUgWeBv7rmnLZACzlVoEcXKyZEnI",
-  authDomain: "sign-up-e2a6c.firebaseapp.com",
-  projectId: "sign-up-e2a6c",
-  storageBucket: "sign-up-e2a6c.firebasestorage.app",
-  messagingSenderId: "1014249305987",
-  appId: "1:1014249305987:web:42bb551d2b879ed39ba8b6",
-};
+import { auth, firestore, FIRESTORE_DB_CANDIDATES } from "/shared/firebase.js";
 
-// IMPORTANT: use a NAMED app so we never accidentally reuse some other default app
-const APP_NAME = "main";
-const app = getApps().some((a) => a.name === APP_NAME)
-  ? getApp(APP_NAME)
-  : initializeApp(firebaseConfig, APP_NAME);
-
-const auth = getAuth(app);
-
-// IMPORTANT: DO NOT pass "default" here. Just use getFirestore(app)
-const db = getFirestore(app);
-
-const ASSETS = {
-  eye: "/files/eye.svg",
-  eyeOff: "/files/eye-off.svg",
-  login: "/files/login.png",
-};
+const ASSETS = { eye: "/files/eye.svg", eyeOff: "/files/eye-off.svg" };
 
 let injected = false;
 let wired = false;
-let wrapEl = null;
+let root = null;
 let modalEl = null;
-
-function setModalOpenState(isOpen) {
-  document.body.classList.toggle("modal-open", isOpen);
-  window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
-}
 
 function ensureCss() {
   const href = "/shared/auth.css";
-  const exists = [...document.querySelectorAll('link[rel="stylesheet"]')]
-    .some((l) => (l.getAttribute("href") || "") === href);
-  if (exists) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+  const exists = [...document.querySelectorAll('link[rel="stylesheet"]')].some(
+    (l) => (l.getAttribute("href") || "") === href
+  );
+  if (!exists) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
 }
-
-function q(sel) {
-  return wrapEl ? wrapEl.querySelector(sel) : null;
-}
-
-function setMsg(t) {
-  const msg = q("#su_msg");
-  if (msg) msg.textContent = t || "";
-}
-
-function resetSignupModal() {
+function resetUI() {
   setMsg("");
-
   const overlay = q("#su_successOverlay");
   const successMsg = q("#su_successMsg");
   if (overlay) overlay.style.display = "none";
@@ -88,87 +50,24 @@ function resetSignupModal() {
   if (pwInput) pwInput.value = "";
   if (pw2Input) pw2Input.value = "";
 
-  if (pwInput) pwInput.type = "password";
   const eye = q("#su_togglePw");
+  if (pwInput) pwInput.type = "password";
   if (eye) eye.src = ASSETS.eye;
 }
 
-export async function ensureSignupInjected() {
-  if (injected) return;
+function q(sel) { return root ? root.querySelector(sel) : null; }
 
-  ensureCss();
-
-  wrapEl = document.createElement("div");
-  wrapEl.innerHTML = `
-    <div id="signupModal" class="modal" style="display:none;">
-      <div class="modal-content animate">
-        <div class="login-box">
-          <h1>Sign up</h1>
-          <span class="close" title="Close">&#10005;</span>
-          <img src="${ASSETS.login}" class="avatar" alt="Avatar" loading="eager" decoding="async" />
-
-          <form class="login-form" action="#" method="post" autocomplete="off">
-            <label class="email">
-              <input id="su_email" type="email" name="email" placeholder="Enter an email"
-                spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="email" required />
-            </label>
-
-            <label class="username">
-              <input id="su_username" type="text" name="username" placeholder="Enter a username"
-                spellcheck="false" autocapitalize="off" autocorrect="off" required />
-            </label>
-
-            <label class="password-field">
-              <input id="su_password" type="password" name="password" placeholder="Enter a password"
-                spellcheck="false" autocorrect="off" required />
-              <img id="su_togglePw" class="eye-icon" src="${ASSETS.eye}" alt="Toggle password visibility" />
-            </label>
-
-            <label class="password-field">
-              <input id="su_confirmPassword" type="password" name="confirmPassword" placeholder="Confirm password"
-                spellcheck="false" autocorrect="off" required />
-            </label>
-
-            <button type="button" id="su_signupBtn" class="loginbtn">Sign up</button>
-            <p id="su_msg"></p>
-          </form>
-
-          <div id="su_successOverlay" class="success-overlay" style="display:none;">
-            <div class="success-card">
-              <p id="su_successMsg" class="success-text"></p>
-              <button type="button" id="su_okBtn" class="loginbtn okbtn">OK</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(wrapEl);
-
-  modalEl = q("#signupModal");
-  if (!modalEl) throw new Error("[signup.js] Could not find #signupModal after injection.");
-
-  injected = true;
-  wireHandlers();
+function setMsg(text, kind = "") {
+  const el = q("#su_msg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.classList.remove("error", "success");
+  if (kind) el.classList.add(kind);
 }
 
-export function openSignup() {
-  if (!modalEl) return;
-  modalEl.style.display = "flex";
-  setModalOpenState(true);
-  document.body.style.overflow = "hidden";
-}
-
-export function closeSignup() {
-  if (!modalEl) return;
-  modalEl.style.display = "none";
-  document.body.style.overflow = "";
-  setModalOpenState(false);
-  resetSignupModal();
-}
+function normalizeUsername(u) { return (u || "").trim().toLowerCase(); }
 
 const RESERVED = new Set(["admin","support","staff","root","system","moderator","login","signup","api","settings"]);
-function normalizeUsername(u) { return (u || "").trim().toLowerCase(); }
 
 function usernamePolicy(u) {
   if (u.length < 3 || u.length > 20) return "Username must be 3–20 characters.";
@@ -191,6 +90,7 @@ function countClasses(pw) {
   if (/[^A-Za-z0-9]/.test(pw)) c++;
   return c;
 }
+
 function passwordPolicy(pw, username, email) {
   if (pw.length < 12 || pw.length > 72) return "Password must be 12–72 characters.";
   if (countClasses(pw) < 2) return "Password must include at least 2 types (lower/upper/number/symbol).";
@@ -202,35 +102,157 @@ function passwordPolicy(pw, username, email) {
   return null;
 }
 
-function makeAvatarSeed(usernameLower) {
-  return `u:${usernameLower}`;
+function makeAvatarSeed(usernameLower) { return `u:${usernameLower}`; }
+function makeAvatarUrl(seed) { return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`; }
+
+// Timeout wrapper so NOTHING can hang forever
+function withTimeout(promise, ms, label = "timeout") {
+  let t;
+  const timeout = new Promise((_, rej) => {
+    t = setTimeout(() => rej(new Error(label)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
 }
-function makeAvatarUrl(seed) {
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
+
+export async function ensureSignupInjected() {
+  if (injected) return;
+
+  ensureCss();
+
+  // If modal already exists on page, use it
+  const existingModal = document.querySelector("#signupModal");
+  const existingBtn = document.querySelector("#su_signupBtn");
+  if (existingModal && existingBtn) {
+    root = document;
+    modalEl = existingModal;
+    injected = true;
+    wireHandlers();
+    return;
+  }
+
+  // Otherwise inject shared modal
+  const res = await fetch("/shared/signup-modal.html", { cache: "no-store" });
+  if (!res.ok) throw new Error(`signup-modal.html fetch failed: ${res.status}`);
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = await res.text();
+  document.body.appendChild(wrap);
+
+  root = wrap;
+  modalEl = q("#signupModal") || q(".modal");
+  if (!modalEl) throw new Error("[signup.js] Could not find #signupModal.");
+
+  injected = true;
+  wireHandlers();
+}
+
+export function openSignup() {
+  if (!modalEl) return;
+  resetUI(); // <-- IMPORTANT
+  modalEl.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  document.body.classList.add("modal-open");
+}
+
+export function closeSignup() {
+  if (!modalEl) return;
+  modalEl.style.display = "none";
+  document.body.style.overflow = "";
+  document.body.classList.remove("modal-open");
+  resetUI(); // <-- IMPORTANT
+}
+
+function mapError(e) {
+  const code = e?.code || "";
+  const msg = String(e?.message || "");
+
+  if (e?.message === "USERNAME_TAKEN") return "Username is already taken.";
+  if (code === "auth/email-already-in-use") return "Email is already in use.";
+  if (code === "auth/invalid-email") return "Invalid email.";
+  if (code === "auth/weak-password") return "Password is too weak.";
+
+  if (code === "permission-denied") return "Firestore rules blocked signup (permission-denied).";
+  if (/database/i.test(msg) && /does not exist/i.test(msg)) return "Firestore databaseId mismatch (no such database).";
+  if (msg === "firestore-timeout") return "Firestore is not responding (timeout).";
+
+  return code || msg || "Signup failed.";
+}
+
+async function writeProfileToFirestore(user, email, username) {
+  // Try each candidate databaseId with a hard timeout so we never hang.
+  let lastErr = null;
+
+  for (const dbId of FIRESTORE_DB_CANDIDATES) {
+    const db = firestore(dbId);
+
+    try {
+      // Reserve username atomically
+      await withTimeout(
+        runTransaction(db, async (tx) => {
+          const ref = doc(db, "usernames", username);
+          const snap = await tx.get(ref);
+          if (snap.exists()) throw new Error("USERNAME_TAKEN");
+          tx.set(ref, { uid: user.uid, createdAt: serverTimestamp() });
+        }),
+        4000,
+        "firestore-timeout"
+      );
+
+      await withTimeout(
+        setDoc(
+          doc(db, "users", user.uid),
+          { uid: user.uid, email, username, createdAt: serverTimestamp() },
+          { merge: true }
+        ),
+        4000,
+        "firestore-timeout"
+      );
+
+      console.warn("[signup.js] Firestore OK using databaseId:", dbId);
+      return; // success
+    } catch (e) {
+      lastErr = e;
+
+      // Username taken should not try other dbs
+      if (e?.message === "USERNAME_TAKEN") throw e;
+
+      // Try next dbId for these common "wrong databaseId" errors
+      const m = String(e?.message || "");
+      if (/does not exist/i.test(m) || e?.code === "not-found" || e?.code === "failed-precondition") {
+        continue;
+      }
+
+      // For permission-denied / timeout / other: stop and surface
+      throw e;
+    }
+  }
+
+  throw lastErr || new Error("Firestore write failed.");
 }
 
 function wireHandlers() {
   if (wired) return;
 
+  const signupBtn = q("#su_signupBtn");
   const closeBtn = q(".close");
   const okBtn = q("#su_okBtn");
-  const signupBtn = q("#su_signupBtn");
 
   const emailInput = q("#su_email");
   const usernameInput = q("#su_username");
   const pwInput = q("#su_password");
   const pw2Input = q("#su_confirmPassword");
-
   const eye = q("#su_togglePw");
+
+  if (!signupBtn || !emailInput || !usernameInput || !pwInput || !pw2Input) {
+    throw new Error("[signup.js] Missing required signup elements (ids must be su_*).");
+  }
 
   closeBtn?.addEventListener("click", closeSignup);
   okBtn?.addEventListener("click", closeSignup);
+  modalEl?.addEventListener("click", (e) => { if (e.target === modalEl) closeSignup(); });
 
-  modalEl.addEventListener("click", (e) => {
-    if (e.target === modalEl) closeSignup();
-  });
-
-  if (eye && pwInput) {
+  if (eye) {
+    eye.src = ASSETS.eye;
     eye.addEventListener("pointerdown", (e) => e.preventDefault());
     eye.addEventListener("click", () => {
       const hidden = pwInput.type === "password";
@@ -246,57 +268,44 @@ function wireHandlers() {
     if (inFlight) return;
     setMsg("");
 
-    const email = (emailInput?.value || "").trim();
-    const username = normalizeUsername(usernameInput?.value || "");
-    const pw = pwInput?.value || "";
-    const pw2 = pw2Input?.value || "";
+    const email = (emailInput.value || "").trim();
+    const username = normalizeUsername(usernameInput.value || "");
+    const pw = pwInput.value || "";
+    const pw2 = pw2Input.value || "";
 
     const uErr = usernamePolicy(username);
-    if (uErr) return setMsg(`Username problems: ${uErr}`);
-    if (!email) return setMsg("Enter an email.");
-    if (pw !== pw2) return setMsg("Password problems: Passwords do not match.");
+    if (uErr) return setMsg(uErr, "error");
+    if (!email) return setMsg("Enter an email.", "error");
+    if (pw !== pw2) return setMsg("Passwords do not match.", "error");
 
     const pErr = passwordPolicy(pw, username, email);
-    if (pErr) return setMsg(`Password problems: ${pErr}`);
+    if (pErr) return setMsg(pErr, "error");
 
     inFlight = true;
     signupBtn.disabled = true;
 
     let cred = null;
 
+    // set flag BEFORE async work starts
+    window.__signupInProgress = true;
+
     try {
-      cred = await createUserWithEmailAndPassword(auth, email, pw);
+      setMsg("Creating account...");
 
-      // Reserve username atomically
-      await runTransaction(db, async (tx) => {
-        const ref = doc(db, "usernames", username);
-        const snap = await tx.get(ref);
-        if (snap.exists()) throw new Error("USERNAME_TAKEN");
-        tx.set(ref, { uid: cred.user.uid, createdAt: serverTimestamp() });
-      });
-
-      // Create users/{uid}
-      const avatarSeed = makeAvatarSeed(username);
-      const avatarUrl = makeAvatarUrl(avatarSeed);
-
-      await setDoc(
-        doc(db, "users", cred.user.uid),
-        {
-          uid: cred.user.uid,
-          email,
-          username,
-          createdAt: serverTimestamp(),
-          avatarSeed,
-          avatarUrl,
-        },
-        { merge: true }
+      cred = await withTimeout(
+        createUserWithEmailAndPassword(auth, email, pw),
+        8000,
+        "auth-timeout"
       );
 
-      await sendEmailVerification(cred.user);
+      await writeProfileToFirestore(cred.user, email, username);
+
+      await withTimeout(sendEmailVerification(cred.user), 8000, "verify-timeout");
+
       await signOut(auth);
 
       const text = "Account created. Verification email sent. Check spam/promotions.";
-      setMsg(text);
+      setMsg(text, "success");
 
       const overlay = q("#su_successOverlay");
       const successMsg = q("#su_successMsg");
@@ -306,15 +315,15 @@ function wireHandlers() {
       }
     } catch (e) {
       console.error("[signup.js] Signup failed:", e);
+      setMsg(mapError(e), "error");
 
-      if (e?.message === "USERNAME_TAKEN") setMsg("Username problems: Username is already taken.");
-      else setMsg(e?.code || e?.message || "Signup failed.");
-
-      // cleanup auth user if we created one but failed reservation/write
       if (cred?.user) {
         try { await deleteUser(cred.user); } catch {}
       }
     } finally {
+      // ALWAYS clear flag, even if something throws
+      window.__signupInProgress = false;
+
       const overlay = q("#su_successOverlay");
       const overlayShowing = overlay && overlay.style.display === "flex";
       if (!overlayShowing) {
@@ -323,6 +332,7 @@ function wireHandlers() {
       }
     }
   });
-
   wired = true;
 }
+
+export default null;

@@ -1,7 +1,5 @@
 // /shared/auth.js
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   setPersistence,
@@ -11,46 +9,63 @@ import {
   sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { auth, firestore, FIRESTORE_DB_CANDIDATES } from "/shared/firebase.js";
 import { ensureSignupInjected, openSignup } from "/shared/signup.js";
 
-import {
-  getFirestore,
-  doc,
-  getDoc,
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDoXwHKUgWeBv7rmnLZACzlVoEcXKyZEnI",
-  authDomain: "sign-up-e2a6c.firebaseapp.com",
-  projectId: "sign-up-e2a6c",
-  storageBucket: "sign-up-e2a6c.firebasestorage.app",
-  messagingSenderId: "1014249305987",
-  appId: "1:1014249305987:web:42bb551d2b879ed39ba8b6",
-};
-
-const APP_NAME = "main";
-const app = getApps().some((a) => a.name === APP_NAME)
-  ? getApp(APP_NAME)
-  : initializeApp(firebaseConfig, APP_NAME);
-
-const auth = getAuth(app);
-
-// IMPORTANT: DO NOT pass "default"
-const db = getFirestore(app);
-
 const ASSETS = {
-  user: "/files/user.svg",
+  userMobile: "/files/user.svg",
+  userLoggedIn: "/files/user-loggedin.svg",
   eye: "/files/eye.svg",
   eyeOff: "/files/eye-off.svg",
 };
 
 let signinInjected = false;
 let signinWired = false;
-
 let signinRoot = null;
 let signinEl = null;
 
+// Global auth state
+window.__authUser = null;
+window.__authGetUser = () => window.__authUser;
+
+// Track modal state so Login can be active while open
+window.__authModalOpen = window.__authModalOpen || false;
+
+// Cache avatar URLs + persist to localStorage to avoid flicker between pages
+window.__avatarCache = window.__avatarCache || new Map();
+const AVATAR_LS_PREFIX = "avatarUrl:";
+
+function getStoredAvatar(uid) {
+  try {
+    return localStorage.getItem(AVATAR_LS_PREFIX + uid) || "";
+  } catch {
+    return "";
+  }
+}
+function setStoredAvatar(uid, url) {
+  try {
+    localStorage.setItem(AVATAR_LS_PREFIX + uid, url);
+  } catch {}
+}
+
+// Mount registry
+window.__authMounts = window.__authMounts || [];
+window.__authGlobalListenerAttached = window.__authGlobalListenerAttached || false;
+
+function emitAuthState(user) {
+  window.__authUser = user || null;
+  window.dispatchEvent(new CustomEvent("auth:state", { detail: { user: window.__authUser } }));
+}
+
+function ensureAuthListener() {
+  if (window.__authListenerAttached) return;
+  window.__authListenerAttached = true;
+  onAuthStateChanged(auth, (user) => emitAuthState(user));
+}
+
 function setModalOpenState(isOpen) {
+  window.__authModalOpen = !!isOpen;
   document.body.classList.toggle("modal-open", isOpen);
   window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
 }
@@ -70,8 +85,6 @@ async function ensureSigninInjected() {
   if (!signinEl) throw new Error("Injected signin modal missing #id01");
 
   signinInjected = true;
-
-  await ensureSignupInjected();
   wireSigninHandlers();
 }
 
@@ -114,6 +127,113 @@ function closeSignin({ clear = true } = {}) {
   if (clear) clearSigninInputs();
 }
 
+window.__authOpenSignin = async function () {
+  await ensureSigninInjected();
+  openSignin();
+};
+
+function dicebearUrlFromSeed(seed) {
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+function withTimeout(promise, ms, label = "timeout") {
+  let t;
+  const timeout = new Promise((_, rej) => (t = setTimeout(() => rej(new Error(label)), ms)));
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
+function isOnAccountPage() {
+  const p = (window.location.pathname || "").toLowerCase();
+  return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
+}
+
+function computeAuthShouldBeActive(authState /* "out"|"in" */) {
+  if (window.__authModalOpen) return true; // modal open => login active
+  if (authState === "in" && isOnAccountPage()) return true; // account page => account active
+  return false;
+}
+
+function clearPageActiveTabs() {
+  document.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active").forEach((a) => {
+    a.classList.remove("active");
+  });
+  const logo = document.querySelector(".navbar .logo a.active");
+  if (logo) logo.classList.remove("active");
+}
+
+function restorePageActiveTabs() {
+  if (typeof window.__bannerApplyActiveNav === "function") window.__bannerApplyActiveNav();
+}
+
+function preloadImage(url, timeoutMs = 2500) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      resolve(ok);
+    };
+
+    const t = setTimeout(() => finish(false), timeoutMs);
+
+    img.onload = () => {
+      clearTimeout(t);
+      finish(true);
+    };
+    img.onerror = () => {
+      clearTimeout(t);
+      finish(false);
+    };
+
+    img.src = url;
+  });
+}
+
+async function resolveAvatarUrl(user) {
+  // cache hit
+  const mem = window.__avatarCache.get(user.uid);
+  if (mem) return mem;
+
+  // localStorage hit
+  const stored = getStoredAvatar(user.uid);
+  if (stored) {
+    window.__avatarCache.set(user.uid, stored);
+    return stored;
+  }
+
+  // Firestore
+  for (const dbId of FIRESTORE_DB_CANDIDATES) {
+    try {
+      const db = firestore(dbId);
+      const snap = await withTimeout(getDoc(doc(db, "users", user.uid)), 2500, "avatar-timeout");
+      if (snap.exists()) {
+        const d = snap.data() || {};
+        if (d.avatarUrl) {
+          const url = String(d.avatarUrl);
+          window.__avatarCache.set(user.uid, url);
+          setStoredAvatar(user.uid, url);
+          return url;
+        }
+        if (d.avatarSeed) {
+          const url = dicebearUrlFromSeed(String(d.avatarSeed));
+          window.__avatarCache.set(user.uid, url);
+          setStoredAvatar(user.uid, url);
+          return url;
+        }
+      }
+      break;
+    } catch (e) {
+      const msg = String(e?.message || "");
+      if (/does not exist/i.test(msg) || e?.code === "not-found" || e?.code === "failed-precondition") continue;
+      break;
+    }
+  }
+
+  return ASSETS.userLoggedIn;
+}
+
 function wireSigninHandlers() {
   if (signinWired) return;
 
@@ -130,11 +250,12 @@ function wireSigninHandlers() {
     throw new Error("Signin modal missing required elements.");
   }
 
-  // THIS is what keeps it as a popup (no navigation)
   if (openSignupLink) {
-    openSignupLink.addEventListener("click", (e) => {
+    openSignupLink.addEventListener("click", async (e) => {
       e.preventDefault();
+      e.stopPropagation();
       closeSignin({ clear: true });
+      await ensureSignupInjected();
       openSignup();
     });
   }
@@ -192,10 +313,7 @@ function wireSigninHandlers() {
     signinBtn.disabled = true;
 
     try {
-      await setPersistence(
-        auth,
-        rememberMe.checked ? browserLocalPersistence : browserSessionPersistence
-      );
+      await setPersistence(auth, rememberMe.checked ? browserLocalPersistence : browserSessionPersistence);
 
       const cred = await signInWithEmailAndPassword(auth, email, pw);
 
@@ -231,72 +349,157 @@ function wireSigninHandlers() {
   signinWired = true;
 }
 
-function dicebearUrlFromSeed(seed) {
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
+// Stable DOM per mount
+function buildMount(authAreaEl) {
+  if (authAreaEl.__authBuilt) return authAreaEl.__authBuilt;
+
+  authAreaEl.textContent = "";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+
+  const img = document.createElement("img");
+  img.className = "nav-icon";
+
+  const text = document.createElement("span");
+  text.textContent = "Login";
+
+  btn.appendChild(text);
+  authAreaEl.appendChild(btn);
+
+  authAreaEl.__authBuilt = { btn, img, text };
+  return authAreaEl.__authBuilt;
 }
 
-async function resolveAvatarUrl(user) {
-  try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    if (snap.exists()) {
-      const d = snap.data() || {};
-      if (d.avatarUrl) return String(d.avatarUrl);
-      if (d.avatarSeed) return dicebearUrlFromSeed(String(d.avatarSeed));
-    }
-  } catch (e) {
-    console.warn("[auth.js] avatar read failed:", e);
-  }
-  const seed = user.email ? `u:${user.email.toLowerCase()}` : `u:${user.uid}`;
-  return dicebearUrlFromSeed(seed);
-}
-
-export async function initAuthButton(authAreaEl) {
+export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
+  ensureAuthListener();
   if (!authAreaEl) return;
-
   await ensureSigninInjected();
 
+  const ui = buildMount(authAreaEl);
+
+  // click routing
   if (!authAreaEl.dataset.authWired) {
     authAreaEl.addEventListener("click", (e) => {
-      if (authAreaEl.dataset.authState === "out") {
-        if (e.target.closest("#authLoginBtn")) openSignin();
+      const state = authAreaEl.dataset.authState || "out";
+      if (state === "out") {
+        if (variant === "mobile" || e.target.closest("#authLoginBtn")) openSignin();
         return;
       }
-      if (authAreaEl.dataset.authState === "in") {
-        if (e.target.closest("#authAccountBtn")) window.location.href = "/account/";
+      if (state === "in") {
+        if (variant === "mobile" || e.target.closest("#authAccountBtn")) window.location.href = "/account/";
       }
     });
     authAreaEl.dataset.authWired = "1";
   }
 
-  function renderLoggedOut() {
+  function showLoginDesktop() {
+    ui.btn.className = "auth-btn";
+    ui.btn.id = "authLoginBtn";
+    ui.btn.title = "Login";
+    if (ui.img.parentNode === ui.btn) ui.btn.removeChild(ui.img);
+    if (ui.text.parentNode !== ui.btn) ui.btn.appendChild(ui.text);
+  }
+
+  function showLoginMobile() {
+    ui.btn.className = "auth-icon-btn";
+    ui.btn.id = "authLoginBtn";
+    ui.btn.title = "Login";
+    ui.img.alt = "Login";
+    ui.img.src = ASSETS.userMobile;
+    if (ui.text.parentNode === ui.btn) ui.btn.removeChild(ui.text);
+    if (ui.img.parentNode !== ui.btn) ui.btn.appendChild(ui.img);
+  }
+
+  function applyActiveClass() {
+    const st = authAreaEl.dataset.authState || "out";
+    ui.btn.classList.toggle("active", computeAuthShouldBeActive(st));
+  }
+
+  async function renderLoggedOut() {
     authAreaEl.dataset.authState = "out";
-    authAreaEl.innerHTML = `<button type="button" class="auth-btn" id="authLoginBtn">Login</button>`;
+    if (variant === "mobile") showLoginMobile();
+    else showLoginDesktop();
+    applyActiveClass();
   }
 
   async function renderLoggedIn(user) {
     authAreaEl.dataset.authState = "in";
-    authAreaEl.innerHTML = `
-      <button type="button" class="auth-icon-btn" id="authAccountBtn" title="${user.email || ""}">
-        <img id="authAvatar" class="auth-icon" alt="Account">
-      </button>
-    `;
 
-    const img = authAreaEl.querySelector("#authAvatar");
-    if (!img) return;
+    ui.btn.className = "auth-icon-btn";
+    ui.btn.id = "authAccountBtn";
+    ui.btn.title = user.email || "";
 
-    img.src = ASSETS.user;
-    img.onerror = () => (img.src = ASSETS.user);
+    if (ui.text.parentNode === ui.btn) ui.btn.removeChild(ui.text);
+    if (ui.img.parentNode !== ui.btn) ui.btn.appendChild(ui.img);
 
-    img.src = await resolveAvatarUrl(user);
+    ui.img.id = "authAvatar";
+    ui.img.alt = "Account";
+
+    // Immediate src: memory -> localStorage -> current -> fallback
+    const mem = window.__avatarCache.get(user.uid);
+    const stored = getStoredAvatar(user.uid);
+    const immediate = mem || stored || ui.img.src || ASSETS.userLoggedIn;
+
+    ui.img.src = immediate;
+    ui.img.onerror = () => (ui.img.src = ASSETS.userLoggedIn);
+
+    applyActiveClass();
+
+    if (window.__signupInProgress) return;
+
+    const url = await resolveAvatarUrl(user);
+
+    // only swap after preload succeeded
+    if (url && url !== ui.img.src) {
+      const ok = await preloadImage(url, 2000);
+      if (ok) ui.img.src = url;
+    }
   }
 
-  renderLoggedOut();
+  // register mount
+  window.__authMounts.push({ renderLoggedIn, renderLoggedOut, __btn: ui.btn });
 
-  if (!window.__authListenerAttached) {
-    window.__authListenerAttached = true;
-    onAuthStateChanged(auth, (user) => {
-      if (user) renderLoggedIn(user);
-      else renderLoggedOut();
+  // initial render
+  const cachedUser = window.__authGetUser?.() || null;
+  if (cachedUser && !window.__signupInProgress) renderLoggedIn(cachedUser);
+  else renderLoggedOut();
+
+  // global listeners once
+  if (!window.__authGlobalListenerAttached) {
+    window.__authGlobalListenerAttached = true;
+
+    window.addEventListener("auth:state", (e) => {
+      const user = e.detail?.user || null;
+      for (const m of window.__authMounts) {
+        if (window.__signupInProgress) m.renderLoggedOut();
+        else if (user) m.renderLoggedIn(user);
+        else m.renderLoggedOut();
+      }
+    });
+
+    window.addEventListener("modal:open", () => {
+      clearPageActiveTabs();
+      for (const m of window.__authMounts) m.__btn?.classList.add("active");
+    });
+
+    window.addEventListener("modal:close", () => {
+      restorePageActiveTabs();
+
+      // recompute auth active after close (account page case)
+      for (const m of window.__authMounts) {
+        const container = m.__btn?.parentElement;
+        const st = container?.dataset?.authState || "out";
+        m.__btn?.classList.toggle("active", computeAuthShouldBeActive(st));
+      }
+    });
+
+    window.addEventListener("popstate", () => {
+      for (const m of window.__authMounts) {
+        const container = m.__btn?.parentElement;
+        const st = container?.dataset?.authState || "out";
+        m.__btn?.classList.toggle("active", computeAuthShouldBeActive(st));
+      }
     });
   }
 }

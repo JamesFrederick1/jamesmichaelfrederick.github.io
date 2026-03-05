@@ -1,0 +1,162 @@
+/* /shared/banner-desktop.css */
+
+/* =========================
+   Top Navbar (desktop)
+========================= */
+.navbar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: var(--white);
+  border-bottom: 1px solid #ccc;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0.8rem 2rem;
+  z-index: 10;
+}
+
+.navbar .logo a{
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.4rem;
+  position: relative;
+}
+
+.navbar nav a{
+  margin: 0 12px;
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 500;
+  position: relative;
+}
+
+.navbar nav a:hover,
+.navbar .logo a:hover{
+  color: #083b73;
+}
+
+.navbar nav a::after,
+.navbar .logo a::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+.navbar nav a:hover::after,
+.navbar .logo a:hover::after{
+  width: 100%;
+}
+
+/* Desktop active styles (blue) */
+.navbar nav a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+  color: #2F80ED;
+}
+.navbar nav a.active::after{ width: 0 !important; }
+.navbar nav a.active:hover{ color: #2F80ED; }
+
+.navbar .logo a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+  color: #2F80ED;
+}
+.navbar .logo a.active::after{ width: 0 !important; }
+.navbar .logo a.active:hover{ color: #2F80ED; }
+
+/* =========================
+   Auth mounts (desktop)
+========================= */
+.auth-area{
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+/* Login text button */
+.auth-btn{
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  color: var(--primary);
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+
+  cursor: pointer;
+  position: relative;
+}
+
+.auth-btn:hover{ color: #083b73; }
+
+.auth-btn::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+.auth-btn:hover::after{ width: 100%; }
+
+/* Icon button (account avatar) */
+.auth-icon-btn{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
+
+  position: relative;
+}
+
+/* IMPORTANT: no pseudo underline for icon buttons (prevents “underline through svg”) */
+.auth-icon-btn::after{ content: none !important; }
+
+.auth-icon-btn:focus,
+.auth-icon-btn:focus-visible{
+  outline: none;
+  box-shadow: none;
+}
+
+/* Desktop auth active styles */
+.navbar .auth-btn.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  color: #2F80ED;
+}
+.navbar .auth-btn.active::after{ width: 0 !important; }
+
+.navbar .auth-icon-btn.active{
+  box-shadow: inset 0 -2px 0 #2F80ED;
+}
+
+/* Stop weird click animation line */
+.navbar .auth-btn:active::after{ width: 0 !important; }
+
+/* Hide mobile bar on desktop (in case markup exists) */
+.navbar-bottom{ display: none; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign Up</title>
-    <link rel="stylesheet" href="/shared/signUp.css" />
+    <link rel="stylesheet" href="/shared/auth.css" />
     <script type="module" src="/shared/signUp.js"></script>
   </head>
 
@@ -13,93 +13,86 @@
     <button id="openModalBtn" type="button">Sign up</button>
 
     <!-- The Modal -->
-    <div id="id01" class="modal">
-      <div class="modal-content animate">
-        <div class="login-box">
-          <h1>Sign up</h1>
-          <span class="close" title="Close">&times;</span>
-          <img src="/files/login.png" class="avatar" alt="Avatar" loading="eager" decoding="async" />
+    
+      <div id="signupModal" class="modal" style="display:none;">
+        <div class="modal-content animate">
+          <div class="login-box">
+            <h1>Sign up</h1>
 
-          <form class="login-form" action="#" method="post">
-            <label class="email">
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Enter a email"
-                onfocus="this.placeholder=''"
-                onblur="this.placeholder='Enter a Email'"
-                spellcheck="false"
-                autocapitalize="off"
-                autocorrect="off"
-                required
-              />
-            </label>
+            <span class="close" title="Close">&#10005;</span>
 
-            <label class="username">
-              <input
-                id="username"
-                type="text"
-                name="username"
-                placeholder="Enter a username"
-                onfocus="this.placeholder=''"
-                onblur="this.placeholder='Enter a username'"
-                spellcheck="false"
-                autocapitalize="off"
-                autocorrect="off"
-                required
-              />
-            </label>
+            <img src="/files/login.png" class="avatar" alt="Avatar" loading="eager" decoding="async" />
 
-            <label class="password-field">
-              <input
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Enter a password"
-                spellcheck="false"
-                autocorrect="off"
-                required
-              />
-              <img
-                id="togglePw"
-                class="eye-icon"
-                src="/files/eye.svg"
-                alt="Toggle password visibility"
-              />
-            </label>
+            <form class="login-form" action="#" method="post" autocomplete="off">
+              <label class="email">
+                <input
+                  id="su_email"
+                  type="email"
+                  name="email"
+                  placeholder="Enter an email"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  autocomplete="email"
+                  required
+                />
+              </label>
 
-            <label class="password-field">
-              <input
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm password"
-                spellcheck="false"
-                autocorrect="off"
-                required
-              />
-            </label>
+              <label class="username">
+                <input
+                  id="su_username"
+                  type="text"
+                  name="username"
+                  placeholder="Enter a username"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocorrect="off"
+                  required
+                />
+              </label>
 
-            <button type="button" id="signupBtn" class="loginbtn">Sign up</button>
+              <label class="password-field">
+                <input
+                  id="su_password"
+                  type="password"
+                  name="password"
+                  placeholder="Enter a password"
+                  spellcheck="false"
+                  autocorrect="off"
+                  required
+                />
+                <img
+                  id="su_togglePw"
+                  class="eye-icon"
+                  src="/files/eye.svg"
+                  alt="Toggle password visibility"
+                />
+              </label>
 
-            <!-- Keep msg for errors / feedback -->
-            <p id="msg"></p>
+              <label class="password-field">
+                <input
+                  id="su_confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  spellcheck="false"
+                  autocorrect="off"
+                  required
+                />
+              </label>
 
-            <div class="signup-link">
-              Have an account? <a href="signin.html?open=1">Sign in</a>
-            </div>
-          </form>
+              <button type="button" id="su_signupBtn" class="loginbtn">Sign up</button>
+              <p id="su_msg"></p>
+            </form>
 
-          <!-- Success overlay -->
-          <div id="successOverlay" class="success-overlay" style="display: none">
-            <div class="success-card">
-              <p id="successMsg" class="success-text"></p>
-              <button type="button" id="okBtn" class="loginbtn okbtn">OK</button>
+            <div id="su_successOverlay" class="success-overlay" style="display:none;">
+              <div class="success-card">
+                <p id="su_successMsg" class="success-text"></p>
+                <button type="button" id="su_okBtn" class="loginbtn okbtn">OK</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   </body>
 </html>

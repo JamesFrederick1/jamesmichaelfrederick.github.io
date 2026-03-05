@@ -1,10 +1,10 @@
+// /shared/banner.js
 import { initAuthButton } from "/shared/auth.js";
 
 (async function () {
   const mount = document.getElementById("bannerMount");
   if (!mount) return;
 
-  // 1) Inject banner HTML
   const res = await fetch("/shared/banner.html", { cache: "no-store" });
   if (!res.ok) {
     console.error("banner.html fetch failed:", res.status);
@@ -12,30 +12,33 @@ import { initAuthButton } from "/shared/auth.js";
   }
   mount.innerHTML = await res.text();
 
-  // 2) Set active nav (for both top and bottom navs)
+  // expose a global so auth.js can restore active tabs after modal closes
+  window.__bannerApplyActiveNav = () => setActiveNav(mount);
+
+  // initial page active
   setActiveNav(mount);
 
-  // 3) Set nav height (for the top navbar)
   setNavHeight(mount);
 
-  // 4) Initialize auth button (desktop and mobile)
-  const authArea = mount.querySelector("#authArea");
-  await initAuthButton(authArea);
+  let authArea = mount.querySelector("#authArea");
+  if (!authArea) {
+    authArea = document.createElement("span");
+    authArea.id = "authArea";
+    authArea.classList.add("auth-area");
+    const nav = mount.querySelector(".navbar nav");
+    if (nav) nav.appendChild(authArea);
+    else mount.appendChild(authArea);
+  }
+
+  await initAuthButton(authArea, { variant: "desktop" });
 
   const mobileAuthBtn = mount.querySelector("#mobileAuthBtn");
   if (mobileAuthBtn) {
-    // Update mobile auth button to have an image (not text)
-    const loginIcon = document.createElement('img');
-    loginIcon.src = '/files/user.svg';  // Replace with the appropriate path for your login icon
-    loginIcon.alt = 'Login';
-    loginIcon.classList.add('nav-icon'); // Add your desired class to match styling
-    mobileAuthBtn.appendChild(loginIcon);
-    await initAuthButton(mobileAuthBtn);
+    mobileAuthBtn.textContent = "";
+    await initAuthButton(mobileAuthBtn, { variant: "mobile" });
   }
 
-  // 5) Set bottom navbar height so content is not clipped
   setBottomNavHeight();
-
   window.addEventListener("resize", setBottomNavHeight);
 
   // -------------------- HELPERS --------------------
@@ -51,7 +54,6 @@ import { initAuthButton } from "/shared/auth.js";
   function setActiveNav(mountEl) {
     const current = normalizePath(window.location.pathname);
 
-    // Loop through navbar links and set active class for both top and bottom nav
     mountEl.querySelectorAll(".navbar nav a, .navbar-bottom nav a").forEach((a) => {
       const hrefRaw = a.getAttribute("href") || "";
       const href = normalizePath(hrefRaw);
@@ -65,11 +67,10 @@ import { initAuthButton } from "/shared/auth.js";
       a.classList.toggle("active", isActive);
     });
 
-    // Handle logo active state (for Home)
     const logoLink = mountEl.querySelector(".logo a");
     if (logoLink) {
       const p = window.location.pathname.toLowerCase();
-      const isHome = (p === "/" || p === "/index.html"); // root only
+      const isHome = p === "/" || p === "/index.html";
       logoLink.classList.toggle("active", isHome);
     }
   }
@@ -95,9 +96,8 @@ import { initAuthButton } from "/shared/auth.js";
     const h = Math.ceil(bottomNav.getBoundingClientRect().height);
     document.documentElement.style.setProperty("--nav-h-bottom", `${h}px`);
 
-    // Push body content up so it doesn't get clipped on mobile
     if (window.innerWidth <= 600) {
-      document.body.style.paddingBottom = `${h}px`;
+      document.body.style.paddingBottom = `${h + 12}px`;
     } else {
       document.body.style.paddingBottom = "0px";
     }

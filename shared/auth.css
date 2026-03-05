@@ -332,3 +332,27 @@ input:focus{
   border-radius: 90px;
 }
 
+
+
+/* Signup message */
+#su_msg{
+  margin-top: 10px;
+  min-height: 20px;
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+  color: #fff;
+  line-height: 1.3;
+  word-break: break-word;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+/* optional “error vs success” looks */
+#su_msg.error{
+  background: rgba(255, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+#su_msg.success{
+  background: rgba(0, 255, 150, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}

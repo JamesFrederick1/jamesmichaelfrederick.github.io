@@ -1,0 +1,136 @@
+/* /shared/banner-mobile.css */
+
+:root{
+  --bottom-icon: 40px;
+  --glass-inset: 12px;
+  --glass-bottom: 6px;
+  --spot: 62px;
+}
+
+/* hide top navbar on mobile */
+.navbar{ display: none !important; }
+
+/* =========================
+   Mobile bottom bar: liquid glass
+========================= */
+.navbar-bottom{
+  display: block !important;
+
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+
+  width: calc(100% - var(--glass-inset)) !important;
+  bottom: var(--glass-bottom) !important;
+
+  border-radius: 22px !important;
+  padding: 10px 6px !important;
+
+  background: rgba(210, 228, 255, 0.55) !important;
+  border: 1px solid rgba(13, 94, 175, 0.22) !important;
+
+  backdrop-filter: blur(22px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(190%) !important;
+
+  box-shadow:
+    0 22px 60px rgba(0,0,0,0.22),
+    0 3px 16px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.35) !important;
+
+  z-index: 20 !important;
+}
+
+.navbar-bottom nav{
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  align-items: center !important;
+}
+
+.navbar-bottom nav > a,
+.navbar-bottom nav > span.auth-area{
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  position: relative !important;
+}
+
+/* remove desktop auth spacing on mobile */
+.navbar-bottom .auth-area{ margin-left: 0 !important; }
+
+/* normalize auth button box */
+#mobileAuthBtn button{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 0 !important;
+
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* icon sizing */
+.navbar-bottom nav img.nav-icon,
+.navbar-bottom nav a img,
+.navbar-bottom nav span img{
+  width: var(--bottom-icon) !important;
+  height: var(--bottom-icon) !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+/* remove ALL underline/border active styles on mobile */
+.navbar-bottom a.active{
+  border-bottom: 0 !important;
+}
+.navbar-bottom a.active::after{
+  content: none !important;
+}
+
+/* liquid glass spotlight bubble behind active item */
+.navbar-bottom a.active::before,
+#mobileAuthBtn button.active::before{
+  content: "" !important;
+  position: absolute !important;
+
+  width: var(--spot) !important;
+  height: var(--spot) !important;
+  border-radius: 999px !important;
+
+  background: rgba(255,255,255,0.38) !important;
+  border: 1px solid rgba(13, 94, 175, 0.22) !important;
+
+  backdrop-filter: blur(18px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(220%) !important;
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -8px 18px rgba(13,94,175,0.10) !important;
+
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 0 !important;
+}
+
+/* keep icon above bubble */
+.navbar-bottom a.active img,
+#mobileAuthBtn button.active img{
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* tap feel */
+.navbar-bottom a:active img,
+#mobileAuthBtn button:active img{
+  transform: scale(0.96) !important;
+}
