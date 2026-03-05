@@ -297,3 +297,8 @@ body.modal-open #authArea #authLoginBtn::after{
   background: #2F80ED !important;
   width: 100% !important;
 }
+
+/* ===== Fix: remove double-gap between last <a> and authArea (desktop) ===== */
+.navbar nav .auth-area{
+  margin-left: 0 !important; /* prevents 12px + 12px = 24px gap */
+}

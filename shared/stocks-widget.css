@@ -53,13 +53,15 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Mobile tweaks */
-@media (max-width: 420px) {
-    .stock-widget {
-        width: 140px;
-        padding: 10px 12px;
-        border-radius: 18px;
-    }
-    .stock-price, .stock-symbol { font-size: 0.9rem; }
-    .stock-sub { font-size: 0.8rem; gap: 6px; }
+/* ===== Mobile: move widgets to top (under the top offset), not bottom ===== */
+@media (max-width: 600px){
+  .widgets{
+    position: fixed;
+    top: calc(var(--nav-h) + 10px);   /* under desktop nav spacing var */
+    bottom: auto !important;
+    left: 12px;
+    right: auto;
+    transform: none !important;       /* disables your translateY(-56px) push */
+    z-index: 30;                      /* above hero overlay */
+  }
 }
