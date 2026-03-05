@@ -1,0 +1,59 @@
+<div id="id01" class="modal" style="display:none;">
+  <div class="modal-content animate">
+    <div class="login-box">
+      <h1>Sign in</h1>
+
+      <span class="close" title="Close">&#10005;</span>
+
+      <img src="/files/login.png" class="avatar" />
+
+      <form id="signinForm" class="login-form" action="#" method="post">
+        <label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="Email"
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+            autocomplete="email"
+            required
+          />
+        </label>
+
+        <label class="password-field">
+          <input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Password"
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+            required
+          />
+          <img id="pwEye" class="eye-icon" src="/files/eye.svg" alt="Toggle password visibility" />
+        </label>
+
+        <label class="remember">
+          <input id="rememberMe" type="checkbox" name="remember" />
+          Remember me
+        </label>
+
+        <button type="button" id="signinBtn" class="loginbtn">Login</button>
+
+        <p id="msg"></p>
+
+        <div class="bottom-row">
+          <span class="psw">Forgot&nbsp;<a href="#" id="forgotPwLink">password?</a></span>
+        </div>
+
+        <div class="signup-link">
+          Don't have an
+          <a href="/shared/signUp.html?open=1" id="openSignupLink">account?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

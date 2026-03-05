@@ -1,0 +1,115 @@
+/* ===========================
+   About page layout
+   =========================== */
+
+.about {
+  padding: 120px 20px 60px;
+}
+
+.about__wrap {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.about__card {
+  max-width: 800px;
+  margin: 0 auto;
+
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  padding: 2rem;
+  border-radius: 10px;
+
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* ===========================
+   Typography (scoped)
+   =========================== */
+
+.about__title {
+  color: var(--primary);
+  font-size: 2.5rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.15;
+}
+
+.about__text {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.about__text--muted {
+  color: #444;
+}
+
+.about__text--italic {
+  font-style: italic;
+}
+
+/* ===========================
+   Background layers (scoped class)
+   =========================== */
+
+body.page-bg {
+  margin: 0;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background: transparent;
+}
+
+/* back layer: blurred + dark tint (stays still) */
+body.page-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+
+  background:
+    linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)),
+    url("/Pictures/beech.jpeg");
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, 110%;
+  background-attachment: fixed, fixed;
+
+  filter: blur(20px);
+  transform: scale(1.15);
+
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* front layer: sharp image slides by background-position */
+body.page-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+
+  background-image: url("/Pictures/beech.jpeg");
+  background-repeat: no-repeat;
+  background-size: 110%;
+  background-attachment: fixed;
+
+  background-position: 35% center;
+
+  z-index: -1;
+  pointer-events: none;
+
+  animation: bgSharpSlide 10s ease-out forwards;
+}
+
+@keyframes bgSharpSlide {
+  from {
+    background-position: 20% center;
+    opacity: 0;
+  }
+  to {
+    background-position: 50% center;
+    opacity: 1;
+  }
+}

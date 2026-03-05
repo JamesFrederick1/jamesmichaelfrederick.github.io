@@ -1,0 +1,108 @@
+.contact-section {
+  padding: 120px 20px 60px;
+}
+
+.container{
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--white);
+  padding: clamp(1rem, 3.5vw, 2rem);
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+h1 {
+  color: var(--primary);
+  font-size: 2.3rem;
+  margin-bottom: 1rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin: 0.8rem 0 0.3rem;
+  font-weight: 500;
+}
+
+input, textarea {
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.submitbtn {
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submitbtn:hover {
+  background: #083b73;
+}
+nav a.active {
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none; 
+}
+.contact-section{
+  padding: calc(var(--nav-h) + 24px) 16px 40px;
+}
+html, body{
+  overflow-x: hidden;
+}
+html, body{
+  overflow-x: hidden;
+}
+/* ===== Logged-out gate ===== */
+.contact-gate {
+  display: none; /* JS toggles */
+  margin: 0 auto;
+  max-width: 600px;
+  padding: 1.25rem 1.25rem;
+  border-radius: 12px;
+  background: var(--white);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.contact-gate h2{
+  color: var(--primary);
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+}
+
+.contact-gate p{
+  margin: 0.5rem 0 1rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.contact-gate .gate-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.contact-gate .gate-btn{
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: var(--white);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.contact-gate .gate-btn:hover{
+  background: #083b73;
+}

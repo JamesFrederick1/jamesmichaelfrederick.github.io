@@ -1,0 +1,88 @@
+/* ===========================
+   Hero Section (no scroll, works)
+=========================== */
+
+/* Hero fixes for animations & overlay, no scroll */
+.hero {
+  position: relative;
+  height: calc(100vh - var(--nav-h));
+  overflow: visible; /* <-- changed from hidden so animations aren't clipped */
+
+  background: url("/Pictures/background.jpg") no-repeat center center;
+  background-size: cover;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: var(--white);
+}
+
+.hero__inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  max-height: 100%; /* keep content inside hero */
+  /* overflow: hidden removed to allow animations to move freely */
+}
+
+/* Optional: keep overlay above background but below content */
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 1;
+  pointer-events: none; /* so overlay doesn’t block clicks */
+}
+
+/* Profile image & content can animate freely */
+.hero__pfp {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.95);
+  object-fit: cover;
+  flex-shrink: 0;
+  max-height: 50%;
+}
+
+
+
+/* name & tagline */
+.hero__name { margin-top: 14px; font-size: clamp(2rem,4.5vw,2.8rem); }
+.hero__tagline { margin-top: 10px; font-size: clamp(1.05rem,2.6vw,1.25rem); color: rgba(255,255,255,0.88); }
+
+/* buttons */
+.hero__links {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.hero__btn {
+  padding: 0.65rem 1.15rem;
+  border-radius: 30px;
+  border: 2px solid rgba(255,255,255,0.92);
+  background: transparent;
+  color: var(--white);
+  text-decoration: none;
+  transition: 0.16s ease all;
+}
+.hero__btn:hover {
+  background: var(--white);
+  color: var(--primary);
+  font-weight: 600;
+  transform: scale(1.07);
+}
+
+/* stock widget bottom-left */
+.widgets {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+}

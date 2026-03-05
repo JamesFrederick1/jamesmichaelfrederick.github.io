@@ -1,0 +1,264 @@
+:root{
+    --primary: #0d5eaf;
+    --white: #ffffff;
+    --light-gray: #f0f0f0;
+    --text: #222222;
+    --nav-h: 0px;
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body{
+    height: 100%;
+    font-family: "Segoe UI", sans-serif;
+    background: var(--white);
+    color: var(--text);
+}
+
+body{
+    padding-top: var(--nav-h);
+}
+body.modal-open .widgets{
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+@keyframes fadeIn {
+    from {
+      
+      opacity: 0;
+  }
+  to {
+      
+      opacity: 1;
+  }
+}
+@keyframes riseUp {
+
+  from {
+      
+      opacity: 0;
+  }
+
+  to {
+      
+      opacity: 1;
+  }
+
+}
+
+@keyframes slideLeft {
+
+  from {
+      transform: translateX(-200px);
+      opacity: 0;
+  }
+
+  to {
+      transform: translateX(0);
+      opacity: 1;
+  }
+
+}
+
+:root{
+  --anim-dur: 700ms;
+  --anim-ease: cubic-bezier(.2,.8,.2,1);
+  --anim-delay: 0ms;
+  --anim-dist: 40px;
+}
+
+/* optional: respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ animation: none !important; transition: none !important; }
+}
+
+
+.pop-up{
+  opacity: 0;
+  transform: translateY(var(--anim-dist));
+  animation: popUp var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes popUp{
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in{
+  opacity: 0;
+  animation: fadeIn var(--anim-dur) ease var(--anim-delay) forwards;
+}
+@keyframes fadeIn{ to { opacity: 1; } }
+
+.slide-in-left{
+  opacity: 0;
+  transform: translateX(calc(-1 * var(--anim-dist)));
+  animation: slideInX var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity;
+}
+.slide-in-right{
+  opacity: 0;
+  transform: translateX(var(--anim-dist));
+  animation: slideInX var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity;
+}
+@keyframes slideInX{
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.scale-in{
+  opacity: 0;
+  transform: scale(.96);
+  animation: scaleIn var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity;
+}
+@keyframes scaleIn{
+  to { opacity: 1; transform: scale(1); }
+}
+
+.blur-in{
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(12px);
+  animation: blurIn var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity, filter;
+}
+@keyframes blurIn{
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+.delay-1{ animation-delay: 1s !important; }
+.delay-2{ animation-delay: 2s !important; }
+.delay-3{ animation-delay: 3s !important; }
+.delay-4{ animation-delay: 4s !important; }
+.delay-5{ animation-delay: 5s !important; }
+
+/* put on any text element: h1, p, etc */
+.reveal-right{
+  display: inline-block;
+  position: relative;
+
+  /* this mask reveals from right -> left */
+  -webkit-mask-image: linear-gradient(#000 0 0);
+  -webkit-mask-size: 0% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: right;
+
+          mask-image: linear-gradient(#000 0 0);
+          mask-size: 0% 100%;
+          mask-repeat: no-repeat;
+          mask-position: right;
+
+  animation: revealFromRight 900ms cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+@keyframes revealFromRight{
+  to{
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+  }
+}
+
+.reveal-right.cursor::after{
+  content:"";
+  position:absolute;
+  top:0; bottom:0;
+  right:0;
+  width:2px;
+  background: currentColor;
+  opacity:.9;
+  animation: cursorBlink 700ms steps(1,end) infinite;
+}
+
+@keyframes cursorBlink{
+  50%{ opacity:0; }
+}
+.wipe-type{
+  display: inline-block;
+  position: relative;
+
+  --speed: 900ms;
+  --delay: 0ms;
+  --blink: 2;
+  --blink-rate: 520ms;
+
+  /* reveal left->right */
+  -webkit-mask-image: linear-gradient(#000 0 0);
+  -webkit-mask-size: 0% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: left;
+
+          mask-image: linear-gradient(#000 0 0);
+          mask-size: 0% 100%;
+          mask-repeat: no-repeat;
+          mask-position: left;
+
+  animation: wipeIn var(--speed) cubic-bezier(.2,.8,.2,1) var(--delay) forwards;
+}
+
+@keyframes wipeIn{
+  to{
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+  }
+}
+
+/* cursor that rides the wipe edge */
+.wipe-type.tw-cursor::after{
+  content:"";
+  position:absolute;
+  top:0; bottom:0;
+
+  /* start at left, end at right */
+  left: 0;
+  width: 2px;
+  background: currentColor;
+
+  animation:
+    cursorMove var(--speed) cubic-bezier(.2,.8,.2,1) var(--delay) forwards,
+    cursorBlink var(--blink-rate) steps(1,end) calc(var(--delay) + var(--speed)) var(--blink),
+    cursorHide 0ms linear calc(var(--delay) + var(--speed) + (var(--blink) * var(--blink-rate))) forwards;
+}
+
+@keyframes cursorMove{ to { left: 100%; } }
+@keyframes cursorBlink{ 50%{ opacity: 0; } }
+@keyframes cursorHide{ to { opacity: 0; } }
+
+/* keep your existing delay-* if you want */
+/* add these as cleaner naming */
+.anim-delay-1 { animation-delay: .2s !important; }
+.anim-delay-2 { animation-delay: .4s !important; }
+.anim-delay-3 { animation-delay: .6s !important; }
+.anim-delay-4 { animation-delay: .8s !important; }
+.anim-delay-5 { animation-delay: 1s !important; }
+.anim-delay-6 { animation-delay: 1.2s !important; }
+.anim-delay-7 { animation-delay: 1.4s !important; }
+
+/* slide up utility */
+.slide-up{
+  opacity: 0;
+  transform: translateY(22px);
+  animation: slideUp var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes slideUp{
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* add extra delays for nice staggering */
+.anim-delay-6 { animation-delay: 6s !important; }
+
+/* mobile tweaks */
+@media (max-width: 420px) {
+  .hero__pfp { width: 130px; height: 130px; max-height: 50%; }
+  .hero__links { gap: 8px; }
+  .hero__btn { max-width: 320px; width: 100%; }
+  .widgets { bottom: 12px; left: 12px; }
+}

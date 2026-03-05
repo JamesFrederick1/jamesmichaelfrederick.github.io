@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account | James Frederick</title>
+
+    <link rel="icon" href="/files/logo.ico" type="image/x-icon" />
+
+    <link rel="stylesheet" href="/shared/base.css" />
+    <link rel="stylesheet" href="/shared/banner.css" />
+
+    <!-- optional if you want your modal styles available here too -->
+    <link rel="stylesheet" href="/shared/auth.css" />
+
+    <!-- account page styles -->
+    <link rel="stylesheet" href="/account/account.css" />
+
+    <script type="module" src="/shared/banner.js"></script>
+    <script type="module" src="/account/account.js"></script>
+  </head>
+
+    <body>
+        <div id="bannerMount"></div>
+
+        <main class="account-section">
+        <div class="container">
+            <h1>Account</h1>
+
+            <div class="card">
+            <div class="row">
+                <img id="avatarImg" class="avatar" src="/files/login.png" alt="Avatar" />
+                <div class="meta">
+                <div class="line"><span class="label">Email:</span> <span id="emailText">—</span></div>
+                <div class="line"><span class="label">Username:</span> <span id="usernameText">—</span></div>
+                <p id="statusMsg" class="status"></p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="resetPwBtn" type="button">Send password reset email</button>
+                <button id="signOutBtn" type="button" class="secondary">Sign out</button>
+            </div>
+            </div>
+
+            <div class="card">
+            <h2>Choose a profile picture</h2>
+            <div id="avatarGrid" class="grid"></div>
+            </div>
+        </div>
+        </main>
+    </body>
+</html>

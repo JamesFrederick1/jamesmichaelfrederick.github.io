@@ -1,0 +1,134 @@
+.account-section {
+  padding: 60px 20px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+h1 {
+  color: var(--primary);
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  margin-bottom: 1rem;
+
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid rgba(0,0,0,0.08);
+  justify-content: center;
+}
+
+.meta .line {
+  margin: 6px 0;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 8px;
+}
+
+.status {
+  margin-top: 10px;
+  min-height: 20px;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--white);
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(0.92);
+}
+
+button.secondary {
+  background: #e9eef6;
+  color: var(--primary);
+}
+
+.grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.avatar-btn {
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.avatar-btn img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-btn:hover {
+  border-color: rgba(13, 94, 175, 0.35);
+}
+
+.avatar-btn.selected {
+  border-color: var(--primary);
+}
+
+.avatar-tile{
+  border: 2px solid transparent;
+  background: transparent;
+  padding: 6px;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.avatar-tile img{
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: block;
+}
+
+.avatar-tile.selected{
+  border-color: var(--primary);
+}

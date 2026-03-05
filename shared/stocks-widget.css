@@ -1,0 +1,65 @@
+.stock-widget {
+    position: relative;
+    background: rgba(0,0,0,0.35); /* frosted glass */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 22px;
+    padding: 12px 16px;
+    width: 160px; /* enough space for price */
+    font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+    color: #fff;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.stock-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline; /* keeps price aligned with text */
+}
+
+.stock-symbol {
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.stock-price {
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-align: right;
+    min-width: 55px; /* ensures numbers stay inside */
+}
+
+/* Bottom row for delta and percent */
+.stock-sub {
+    display: flex;
+    justify-content: flex-end; /* align both numbers right */
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.stock-pos { color: #22c55e; font-weight: 600; text-align: right; }
+.stock-neg { color: #ef4444; font-weight: 600; text-align: right; }
+.stock-muted { opacity: 0.7; text-align: right; }
+
+/* Hover effect like iOS lift */
+.stock-widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Mobile tweaks */
+@media (max-width: 420px) {
+    .stock-widget {
+        width: 140px;
+        padding: 10px 12px;
+        border-radius: 18px;
+    }
+    .stock-price, .stock-symbol { font-size: 0.9rem; }
+    .stock-sub { font-size: 0.8rem; gap: 6px; }
+}

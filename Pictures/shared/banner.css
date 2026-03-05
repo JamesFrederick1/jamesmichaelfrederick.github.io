@@ -1,0 +1,204 @@
+.navbar{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+
+    background: var(--white);
+    border-bottom: 1px solid #ccc;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0.8rem 2rem;
+    z-index: 10;
+}
+
+.navbar .logo a{
+    text-decoration: none;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.4rem;
+    position: relative;
+}
+
+.navbar nav a{
+    margin: 0 12px;
+    text-decoration: none;
+    color: var(--primary);
+    font-weight: 500;
+    position: relative;
+}
+
+.navbar nav a:hover{
+    color: #083b73;
+}
+
+.navbar nav a::after,
+.navbar .logo a::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+.navbar nav a:hover::after,
+.navbar .logo a:hover::after{
+  width: 100%;
+}
+
+.navbar nav a.active{
+    font-weight: bold;
+    border-bottom: 2px solid;
+    pointer-events: none;
+    color: #2F80ED;
+}
+
+.navbar nav a.active::after{
+    width: 0 !important;
+}
+
+.navbar nav a.active:hover{
+    color: var(--primary);
+}
+
+.navbar .logo a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+}
+
+.navbar .logo a.active::after{
+  width: 0 !important;
+}
+
+.navbar .logo a.active:hover{
+  color: var(--primary);
+}
+/*********************************************************************/
+
+/* match your theme; tweak if you want */
+/* Auth area sits in the same line as nav links */
+.auth-area{
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+/* Login button should look like a nav link */
+.auth-btn{
+  background: transparent;
+  border: 0;
+
+  /* match the anchor spacing exactly */
+  margin: 0;
+  padding: 0;
+
+  color: var(--primary);
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+
+  cursor: pointer;
+  position: relative;
+}
+.auth-btn:hover {
+  color: #083b73;
+}
+
+/* If you want the SAME hover underline animation as links: */
+.auth-btn::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+.auth-btn:hover::after,
+.auth-icon-btn:hover::after,
+.auth-icon-btn.active::after {
+  width: 100%;
+}
+
+/* Icon button matches nav height, not a random 20px */
+.auth-icon-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-left: 0px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  height: 1.2em; /* aligns with text height */
+  position: relative;
+
+}
+
+.auth-icon {
+  height: 1.8em;  /* match nav text */
+  width: auto;
+  display: block;
+}
+
+
+/* same underline animation as links */
+.auth-icon-btn::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+/* animate on hover */
+.auth-icon-btn:hover::after{
+  width: 100%;
+}
+
+.auth-area.is-active .auth-btn,
+.auth-area.is-active .auth-icon-btn{
+  font-weight: bold;
+  border-bottom: 2px solid;
+}
+.auth-area.is-active .auth-btn::after{ width: 0 !important; } /* match link active behavior */
+
+.avatar-tile {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+
+    outline: none;
+    box-shadow: none;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.avatar-tile:focus,
+.avatar-tile:active {
+    outline: none;
+    box-shadow: none;
+}
+
+/* image inside */
+.avatar-tile img {
+    display: block;
+    pointer-events: none;
+}
+/* remove ugly focus highlight */
+.auth-icon-btn:focus,
+.auth-icon-btn:focus-visible{
+  outline: none;
+  box-shadow: none;
+}
