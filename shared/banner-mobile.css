@@ -45,6 +45,9 @@
   display: grid !important;
   grid-template-columns: repeat(6, 1fr) !important;
   align-items: center !important;
+
+  position: relative !important;
+  isolation: isolate !important;
 }
 
 .navbar-bottom nav > a,
@@ -54,6 +57,7 @@
   align-items: center !important;
   min-width: 0 !important;
   position: relative !important;
+  z-index: 1 !important;
 }
 
 /* remove desktop auth spacing on mobile */
@@ -77,7 +81,7 @@
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* icon sizing */
+/* icon sizing (KEEP BROAD so nothing becomes 24x24 randomly) */
 .navbar-bottom nav img.nav-icon,
 .navbar-bottom nav a img,
 .navbar-bottom nav span img{
@@ -87,7 +91,7 @@
   object-fit: contain !important;
 }
 
-/* remove ALL underline/border active styles on mobile */
+/* remove underline/border active styles on mobile */
 .navbar-bottom a.active{
   border-bottom: 0 !important;
 }
@@ -95,7 +99,10 @@
   content: none !important;
 }
 
-/* liquid glass spotlight bubble behind active item */
+/* =========================================================
+   Fallback bubble (ONLY used if spotlight fails)
+   - We will hide it when nav has .has-spotlight (JS adds it)
+========================================================= */
 .navbar-bottom a.active::before,
 #mobileAuthBtn button.active::before{
   content: "" !important;
@@ -122,15 +129,60 @@
   z-index: 0 !important;
 }
 
+/* If spotlight exists, disable fallback bubble so there’s only ONE bubble */
+.navbar-bottom nav.has-spotlight a.active::before,
+.navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before{
+  content: none !important;
+}
+
+/* =========================================================
+   Single animated spotlight element (main system)
+========================================================= */
+.navbar-bottom .nav-spotlight{
+  position: absolute !important;
+  left: 0 !important;
+  top: 50% !important;
+
+  width: var(--spot) !important;
+  height: var(--spot) !important;
+  border-radius: 999px !important;
+
+  transform: translate3d(0, -50%, 0);
+  will-change: transform !important;
+  pointer-events: none !important;
+
+  z-index: 0 !important;
+
+  background: rgba(255,255,255,0.38) !important;
+  border: 1px solid rgba(13, 94, 175, 0.22) !important;
+
+  backdrop-filter: blur(18px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(220%) !important;
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.45),
+    inset 0 -8px 18px rgba(13,94,175,0.10) !important;
+
+  /* smoother = slightly longer + less aggressive curve */
+  transition: transform 260ms cubic-bezier(.22,.9,.18,1);
+}
+
 /* keep icon above bubble */
 .navbar-bottom a.active img,
 #mobileAuthBtn button.active img{
   position: relative !important;
-  z-index: 1 !important;
+  z-index: 2 !important;
 }
 
 /* tap feel */
 .navbar-bottom a:active img,
 #mobileAuthBtn button:active img{
-  transform: scale(0.96) !important;
+  transform: scale(0.96);
+}
+
+/* disable fallback only when spotlight is enabled */
+.navbar-bottom nav.has-spotlight a.active::before,
+.navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before{
+  content: none !important;
 }

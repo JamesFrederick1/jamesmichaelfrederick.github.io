@@ -135,7 +135,7 @@
 }
 
 /* IMPORTANT: no pseudo underline for icon buttons (prevents “underline through svg”) */
-.auth-icon-btn::after{ content: none !important; }
+.auth-icon-btn::after{ content: "" !important; width: 0; }
 
 .auth-icon-btn:focus,
 .auth-icon-btn:focus-visible{
@@ -160,3 +160,96 @@
 
 /* Hide mobile bar on desktop (in case markup exists) */
 .navbar-bottom{ display: none; }
+
+/* ===== Desktop: Account icon gets a REAL underline (flat) ===== */
+.navbar .auth-icon-btn{
+  border-radius: 10px;     /* keep your button round */
+  padding-bottom: 8px;     /* room for underline */
+}
+
+.navbar .auth-icon-btn.active{
+  box-shadow: none !important; /* kill the "rounded border" look */
+}
+
+.navbar .auth-icon-btn.active::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;             /* sits in padding gutter */
+  height: 2px;
+  background: #2F80ED;     /* active blue */
+  border-radius: 0 !important; /* FLAT line */
+}
+
+/* ===== Desktop: kill the black line / focus flash on click ===== */
+.navbar .auth-btn,
+.navbar .auth-icon-btn{
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navbar .auth-btn:focus,
+.navbar .auth-btn:focus-visible,
+.navbar .auth-icon-btn:focus,
+.navbar .auth-icon-btn:focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* stop underline animation on click/keyboard focus */
+.navbar .auth-btn:active::after,
+.navbar .auth-btn:focus-visible::after{
+  width: 0 !important;
+}
+
+/* Desktop: make Login active underline visible + consistent */
+.navbar .auth-btn.active{
+  color: #2F80ED;
+  border-bottom: 2px solid #2F80ED;
+  padding-bottom: 2px; /* gives the underline room */
+}
+
+/* don’t run the hover underline animation while active */
+.navbar .auth-btn.active::after{
+  width: 0 !important;
+}
+
+/* Desktop: when login modal is open, make Login look active */
+body.modal-open #authArea #authLoginBtn{
+  color: #2F80ED !important;
+  border-bottom: 2px solid #2F80ED !important;
+  padding-bottom: 2px;
+}
+
+/* stop hover underline animation while modal-open */
+body.modal-open #authArea #authLoginBtn::after{
+  width: 0 !important;
+}
+
+/* Desktop: show Login as active when modal is open */
+body.modal-open #authArea #authLoginBtn{
+  color: #2F80ED !important;
+  border-bottom: 2px solid #2F80ED !important;
+  padding-bottom: 2px;
+}
+
+/* stop hover underline animation while modal-open */
+body.modal-open #authArea #authLoginBtn::after{
+  width: 0 !important;
+}
+
+/* Kill click/focus underline flash on desktop login */
+#authArea #authLoginBtn:active,
+#authArea #authLoginBtn:focus,
+#authArea #authLoginBtn:focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Force the animated underline off during click/focus (prevents black sweep) */
+#authArea #authLoginBtn:active::after,
+#authArea #authLoginBtn:focus::after,
+#authArea #authLoginBtn:focus-visible::after{
+  width: 0 !important;
+  background: transparent !important;
+}
