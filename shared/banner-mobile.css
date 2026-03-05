@@ -186,3 +186,18 @@
 .navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before{
   content: none !important;
 }
+
+/* Home-only: slide the bottom bar in after hero animations */
+body.home .navbar-bottom{
+  opacity: 0;
+  transform: translate3d(-50%, 18px, 0);
+  animation: homeBarIn 520ms cubic-bezier(.2,.9,.2,1) 1.2s forwards;
+}
+
+@keyframes homeBarIn{
+  to{
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+

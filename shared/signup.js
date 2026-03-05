@@ -152,10 +152,16 @@ export function openSignup() {
   modalEl.style.display = "flex";
   document.body.style.overflow = "hidden";
   document.body.classList.add("modal-open");
+
+  document.documentElement.style.overflow = "hidden";
+  
 }
 
 export function closeSignup() {
   if (!modalEl) return;
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+
   modalEl.style.display = "none";
   document.body.style.overflow = "";
   document.body.classList.remove("modal-open");

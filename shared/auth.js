@@ -80,6 +80,13 @@ function ensureAuthListener() {
 
 function setModalOpenState(isOpen) {
   window.__authModalOpen = !!isOpen;
+
+  // IMPORTANT: let banner.js take over "Login active" + spotlight sync on mobile
+  // This is what fixes: "login doesn't activate as active on mobile"
+  if (typeof window.__bannerSetAuthModalActive === "function") {
+    try { window.__bannerSetAuthModalActive(!!isOpen); } catch {}
+  }
+
   document.body.classList.toggle("modal-open", isOpen);
   window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
 }
@@ -454,7 +461,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
   }
 
   function showLoggedOutDesktop() {
-    // Desktop logged out is TEXT login
     ui.btn.className = "auth-btn";
     ui.btn.id = "authLoginBtn";
     ui.btn.title = "Login";
@@ -463,7 +469,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
   }
 
   function showLoggedOutMobile() {
-    // Mobile logged out is icon
     ui.btn.className = "auth-icon-btn";
     ui.btn.id = "authLoginBtn";
     ui.btn.title = "Login";
@@ -484,10 +489,8 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
 
   async function renderLoggedOut() {
     authAreaEl.dataset.authState = "out";
-
     if (variant === "mobile") showLoggedOutMobile();
     else showLoggedOutDesktop();
-
     applyActiveClass();
     ui.btn.style.visibility = "visible";
   }
@@ -495,7 +498,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
   async function renderLoggedIn(user) {
     authAreaEl.dataset.authState = "in";
 
-    // Signed IN is always icon button (desktop + mobile), but fallback differs.
     ui.btn.className = "auth-icon-btn";
     ui.btn.id = "authAccountBtn";
     ui.btn.title = user.email || "";
@@ -508,7 +510,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
 
     const fallback = getSignedInFallbackForVariant();
 
-    // Use cached/stored dicebear immediately if available (prevents flicker)
     const mem = window.__avatarCache.get(user.uid);
     const stored = getStoredAvatar(user.uid);
     const immediate =
@@ -523,10 +524,8 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     applyActiveClass();
     ui.btn.style.visibility = "visible";
 
-    // ignore any transient sign-in during signup flow
     if (window.__signupInProgress) return;
 
-    // Try dicebear from Firestore; if found, preload then swap.
     const dicebear = await resolveDicebearAvatarUrl(user);
     if (dicebear && dicebear !== ui.img.src) {
       const ok = await preloadImage(dicebear, 2000);
@@ -534,10 +533,8 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     }
   }
 
-  // register mount
   window.__authMounts.push({ renderLoggedIn, renderLoggedOut, __btn: ui.btn });
 
-  // initial render
   if (window.__authReady) {
     const userNow = auth.currentUser || window.__authGetUser?.() || null;
     if (userNow && !window.__signupInProgress) renderLoggedIn(userNow);
@@ -552,7 +549,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     window.addEventListener("auth:ready", onReady);
   }
 
-  // global listeners once
   if (!window.__authGlobalListenerAttached) {
     window.__authGlobalListenerAttached = true;
 
@@ -565,13 +561,11 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
     });
 
-    // When modal opens: clear page active tabs; highlight login button(s)
     window.addEventListener("modal:open", () => {
       clearPageActiveTabs();
       for (const m of window.__authMounts) m.__btn?.classList.add("active");
     });
 
-    // When modal closes: restore page active tabs; re-apply auth active state
     window.addEventListener("modal:close", () => {
       restorePageActiveTabs();
       for (const m of window.__authMounts) {
@@ -581,7 +575,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
     });
 
-    // If you ever do SPA-style nav, keep active in sync
     window.addEventListener("popstate", () => {
       for (const m of window.__authMounts) {
         const container = m.__btn?.parentElement;

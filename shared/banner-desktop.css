@@ -302,3 +302,4 @@ body.modal-open #authArea #authLoginBtn::after{
 .navbar nav .auth-area{
   margin-left: 0 !important; /* prevents 12px + 12px = 24px gap */
 }
+

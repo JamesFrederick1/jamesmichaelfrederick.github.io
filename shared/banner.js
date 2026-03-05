@@ -15,17 +15,19 @@ import { initAuthButton } from "/shared/auth.js";
   // helpers exposed for auth.js
   window.__bannerApplyActiveNav = () => {
     setActiveNav(mount);
+    ensureMobileSpotlight(mount);
     syncMobileSpotlight(mount, { instant: true });
   };
 
+  // ✅ This is what auth.js calls on modal open/close
   window.__bannerSetAuthModalActive = (isOpen) => {
     const bottomNav = mount.querySelector(".navbar-bottom nav");
     const topNav = mount.querySelector(".navbar nav");
     if (!bottomNav && !topNav) return;
 
-    // Helper: clear all active states in both navs (prevents Home staying active)
     const clearAllActives = () => {
-      mount.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active")
+      mount
+        .querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active")
         .forEach((el) => el.classList.remove("active"));
     };
 
@@ -36,13 +38,16 @@ import { initAuthButton } from "/shared/auth.js";
       desktopLoginBtn?.classList.toggle("active", active && !!desktopLoginBtn);
       desktopAccountBtn?.classList.toggle("active", active && !!desktopAccountBtn);
 
-      // Mobile auth slot
-      const mobileAuthBtn = mount.querySelector("#mobileAuthBtn button") || mount.querySelector("#mobileAuthBtn");
-      mobileAuthBtn?.classList.toggle("active", active);
+      // Mobile auth slot (prefer the button if it exists)
+      const mobileBtn =
+        mount.querySelector("#mobileAuthBtn button") ||
+        mount.querySelector("#mobileAuthBtn");
+
+      if (mobileBtn) mobileBtn.classList.toggle("active", active);
     };
 
     if (isOpen) {
-      // Save what was active so we can restore it later
+      // Save current actives for restore
       const activeBottom = mount.querySelector(".navbar-bottom nav a.active");
       const activeTop = mount.querySelector(".navbar nav a.active");
       mount.__savedActiveHrefBottom = activeBottom?.getAttribute("href") || "";
@@ -53,12 +58,14 @@ import { initAuthButton } from "/shared/auth.js";
       clearAllActives();
       setAuthActive(true);
 
-      // Re-sync spotlight to auth
-      syncMobileSpotlight(mount, { instant: true });
+      // ✅ GUARANTEE spotlight exists, then MOVE IT TO LOGIN (animated)
+      ensureMobileSpotlight(mount);
+      // not instant so it slides to login
+      syncMobileSpotlight(mount, { instant: false });
       return;
     }
 
-    // Modal closed: remove auth active and restore the page highlight
+    // Modal closed: remove auth active and restore page highlight
     setAuthActive(false);
     clearAllActives();
 
@@ -66,18 +73,23 @@ import { initAuthButton } from "/shared/auth.js";
     if (mount.__savedLogoActive) {
       mount.querySelector(".logo a")?.classList.add("active");
     } else if (mount.__savedActiveHrefTop) {
-      mount.querySelector(`.navbar nav a[href="${mount.__savedActiveHrefTop}"]`)?.classList.add("active");
+      mount
+        .querySelector(`.navbar nav a[href="${mount.__savedActiveHrefTop}"]`)
+        ?.classList.add("active");
     } else {
       setActiveNav(mount);
     }
 
     // Restore bottom nav
     if (mount.__savedActiveHrefBottom) {
-      mount.querySelector(`.navbar-bottom nav a[href="${mount.__savedActiveHrefBottom}"]`)?.classList.add("active");
+      mount
+        .querySelector(`.navbar-bottom nav a[href="${mount.__savedActiveHrefBottom}"]`)
+        ?.classList.add("active");
     } else {
       setActiveNav(mount);
     }
 
+    ensureMobileSpotlight(mount);
     syncMobileSpotlight(mount, { instant: true });
   };
 
@@ -113,12 +125,14 @@ import { initAuthButton } from "/shared/auth.js";
   window.addEventListener("auth:state", () => {
     setActiveNav(mount);
     applyAccountAsActiveTab(mount);
+    ensureMobileSpotlight(mount);
     syncMobileSpotlight(mount, { instant: true });
   });
 
   setBottomNavHeight();
   window.addEventListener("resize", () => {
     setBottomNavHeight();
+    ensureMobileSpotlight(mount);
     syncMobileSpotlight(mount, { instant: true });
   });
 
@@ -140,7 +154,6 @@ import { initAuthButton } from "/shared/auth.js";
   function setActiveNav(mountEl) {
     const current = normalizePath(window.location.pathname);
 
-    // HARD clear (prevents Home + something else)
     mountEl
       .querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active")
       .forEach((el) => el.classList.remove("active"));
@@ -158,7 +171,6 @@ import { initAuthButton } from "/shared/auth.js";
       a.classList.toggle("active", isActive);
     });
 
-    // logo active only on home
     const logoLink = mountEl.querySelector(".logo a");
     if (logoLink) {
       const p = (window.location.pathname || "").toLowerCase();
@@ -170,22 +182,19 @@ import { initAuthButton } from "/shared/auth.js";
   function applyAccountAsActiveTab(mountEl) {
     const onAccount = isAccountPath();
 
-    // Desktop: underline the auth button / avatar as active when on /account
     const desktopBtn =
-      mountEl.querySelector("#authArea #authAccountBtn") || mountEl.querySelector("#authArea #authLoginBtn");
+      mountEl.querySelector("#authArea #authAccountBtn") ||
+      mountEl.querySelector("#authArea #authLoginBtn");
     if (desktopBtn) desktopBtn.classList.toggle("active", onAccount);
 
-    // Mobile: spotlight should sit on auth slot on /account
     const bottomNav = mountEl.querySelector(".navbar-bottom nav");
     if (!bottomNav) return;
     const mobileBtn =
-      bottomNav.querySelector("#mobileAuthBtn button") || bottomNav.querySelector("#mobileAuthBtn");
+      bottomNav.querySelector("#mobileAuthBtn button") ||
+      bottomNav.querySelector("#mobileAuthBtn");
     if (mobileBtn) mobileBtn.classList.toggle("active", onAccount);
 
-    if (onAccount) {
-      // clear any active link so Home isn't also active
-      bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
-    }
+    if (onAccount) bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
   }
 
   function setNavHeight(mountEl) {
@@ -218,30 +227,38 @@ import { initAuthButton } from "/shared/auth.js";
 
   // =============== MOBILE SPOTLIGHT ===============
 
-  function initMobileSpotlight(mountEl) {
+  function ensureMobileSpotlight(mountEl) {
     const bottomNav = mountEl.querySelector(".navbar-bottom nav");
     if (!bottomNav) return;
 
-    // create spotlight once
     let spot = bottomNav.querySelector(".nav-spotlight");
     if (!spot) {
       spot = document.createElement("span");
       spot.className = "nav-spotlight";
       bottomNav.prepend(spot);
     }
-
-    // IMPORTANT: disable fallback bubbles via CSS selector nav.has-spotlight ...
     bottomNav.classList.add("has-spotlight");
+  }
+
+  function initMobileSpotlight(mountEl) {
+    const bottomNav = mountEl.querySelector(".navbar-bottom nav");
+    if (!bottomNav) return;
+
+    ensureMobileSpotlight(mountEl);
+
+    if (bottomNav.__spotlightWired) {
+      requestAnimationFrame(() => syncMobileSpotlight(mountEl, { instant: true }));
+      return;
+    }
+    bottomNav.__spotlightWired = true;
 
     bottomNav.__spotIndex = null;
 
-    // place spotlight on current active
     requestAnimationFrame(() => syncMobileSpotlight(mountEl, { instant: true }));
 
     bottomNav.addEventListener("click", async (e) => {
       if (window.innerWidth > 600) return;
 
-      // auth slot click -> let auth.js handle
       if (e.target.closest("#mobileAuthBtn")) return;
 
       const link = e.target.closest("a[href]");
@@ -258,16 +275,14 @@ import { initAuthButton } from "/shared/auth.js";
         current === targetPath ||
         current === targetIndex ||
         (targetPath.endsWith("/") && current.startsWith(targetPath));
-
       if (isSame) return;
 
-      // IMPORTANT: prevent navigation so we can animate
       e.preventDefault();
 
-      // Only ONE “active” should exist while moving (prevents 2 circles)
       bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
       link.classList.add("active");
 
+      const spot = bottomNav.querySelector(".nav-spotlight");
       await animateSpotlightTo(bottomNav, spot, link);
 
       window.location.href = href;
@@ -294,6 +309,7 @@ import { initAuthButton } from "/shared/auth.js";
   }
 
   async function ensureSpotHasSize(spot) {
+    if (!spot) return;
     for (let i = 0; i < 3; i++) {
       if (spot.offsetWidth > 0 && spot.offsetHeight > 0) return;
       await new Promise((r) => requestAnimationFrame(r));
@@ -312,7 +328,7 @@ import { initAuthButton } from "/shared/auth.js";
 
   async function animateSpotlightTo(bottomNav, spot, targetEl) {
     const targets = getTargets(bottomNav);
-    if (!targets.length) return;
+    if (!targets.length || !spot) return;
 
     await ensureSpotHasSize(spot);
 
@@ -325,7 +341,6 @@ import { initAuthButton } from "/shared/auth.js";
     const to = findIndex(targets, targetEl);
     if (to < 0) return;
 
-    // snap to FROM first to avoid “jump between slots”
     const x0 = xForTarget(bottomNav, spot, targets[from]);
     spot.style.transition = "none";
     spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
@@ -374,13 +389,9 @@ import { initAuthButton } from "/shared/auth.js";
         spot.style.transform = `translate3d(${x}px, -50%, 0)`;
         requestAnimationFrame(() => (spot.style.transition = ""));
       } else {
+        // CSS transition handles the slide
         spot.style.transform = `translate3d(${x}px, -50%, 0)`;
       }
     });
-  }
-
-  function cssEscape(s) {
-    // tiny safe escape for href selector usage
-    return String(s).replace(/"/g, '\\"');
   }
 })();
