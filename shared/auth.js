@@ -30,19 +30,23 @@ window.__authUser = null;
 window.__authGetUser = () => window.__authUser;
 window.__authModalOpen = window.__authModalOpen || false;
 
-// AUTH READY FLAG: prevents initial “logged-out flash”
+// prevents initial “logged-out flash”
 window.__authReady = window.__authReady || false;
 
+// avatar cache
 window.__avatarCache = window.__avatarCache || new Map();
 const AVATAR_LS_PREFIX = "avatarUrl:";
 
+// mounts
 window.__authMounts = window.__authMounts || [];
 window.__authGlobalListenerAttached = window.__authGlobalListenerAttached || false;
 
 // ---------- Helpers ----------
 function emitAuthState(user) {
   window.__authUser = user || null;
-  window.dispatchEvent(new CustomEvent("auth:state", { detail: { user: window.__authUser } }));
+  window.dispatchEvent(
+    new CustomEvent("auth:state", { detail: { user: window.__authUser } })
+  );
 }
 
 function ensureAuthListener() {
@@ -50,7 +54,6 @@ function ensureAuthListener() {
   window.__authListenerAttached = true;
 
   onAuthStateChanged(auth, (user) => {
-    // first auth callback => auth is “ready”
     if (!window.__authReady) {
       window.__authReady = true;
       window.dispatchEvent(new Event("auth:ready"));
@@ -63,6 +66,11 @@ function setModalOpenState(isOpen) {
   window.__authModalOpen = !!isOpen;
   document.body.classList.toggle("modal-open", isOpen);
   window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
+
+  // ✅ Tell banner to force-login-active / restore page active
+  if (typeof window.__bannerSetAuthModalActive === "function") {
+    window.__bannerSetAuthModalActive(!!isOpen);
+  }
 }
 
 async function ensureSigninInjected() {
@@ -145,14 +153,8 @@ function preloadImage(url, timeoutMs = 2000) {
     };
 
     const t = setTimeout(() => finish(false), timeoutMs);
-    img.onload = () => {
-      clearTimeout(t);
-      finish(true);
-    };
-    img.onerror = () => {
-      clearTimeout(t);
-      finish(false);
-    };
+    img.onload = () => { clearTimeout(t); finish(true); };
+    img.onerror = () => { clearTimeout(t); finish(false); };
     img.src = url;
   });
 }
@@ -161,27 +163,21 @@ function dicebearUrlFromSeed(seed) {
   return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
 }
 
+// ✅ FIX: include /account (no trailing slash) too
 function isOnAccountPage() {
   const p = (window.location.pathname || "").toLowerCase();
-  return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
+  return (
+    p === "/account" ||
+    p === "/account/" ||
+    p === "/account/index.html" ||
+    p.startsWith("/account/")
+  );
 }
 
 function computeAuthShouldBeActive(authState /* "out"|"in" */) {
   if (window.__authModalOpen) return true;
   if (authState === "in" && isOnAccountPage()) return true;
   return false;
-}
-
-function clearPageActiveTabs() {
-  document.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active").forEach((a) => {
-    a.classList.remove("active");
-  });
-  const logo = document.querySelector(".navbar .logo a.active");
-  if (logo) logo.classList.remove("active");
-}
-
-function restorePageActiveTabs() {
-  if (typeof window.__bannerApplyActiveNav === "function") window.__bannerApplyActiveNav();
 }
 
 // ---------- Avatar cache ----------
@@ -213,9 +209,7 @@ function getStoredAvatar(uid) {
 function setStoredAvatar(uid, url) {
   if (!uid) return;
   if (!url || isPlaceholderIconUrl(url)) return;
-  try {
-    localStorage.setItem(AVATAR_LS_PREFIX + uid, url);
-  } catch {}
+  try { localStorage.setItem(AVATAR_LS_PREFIX + uid, url); } catch {}
 }
 
 async function resolveAvatarUrl(user) {
@@ -406,10 +400,8 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
 
   const ui = buildMount(authAreaEl);
 
-  // IMPORTANT: hide until auth is ready (prevents the wrong icon from showing)
   ui.btn.style.visibility = window.__authReady ? "visible" : "hidden";
 
-  // click routing
   if (!authAreaEl.dataset.authWired) {
     authAreaEl.addEventListener("click", (e) => {
       const state = authAreaEl.dataset.authState || "out";
@@ -420,7 +412,9 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
 
       if (state === "in") {
-        if (variant === "mobile" || e.target.closest("#authAccountBtn")) window.location.href = "/account/";
+        if (variant === "mobile" || e.target.closest("#authAccountBtn")) {
+          window.location.href = "/account/";
+        }
       }
     });
     authAreaEl.dataset.authWired = "1";
@@ -493,16 +487,13 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     }
   }
 
-  // register mount
   window.__authMounts.push({ renderLoggedIn, renderLoggedOut, __btn: ui.btn });
 
-  // If auth already ready, render immediately from current state
   if (window.__authReady) {
     const userNow = auth.currentUser || window.__authGetUser?.() || null;
     if (userNow && !window.__signupInProgress) renderLoggedIn(userNow);
     else renderLoggedOut();
   } else {
-    // wait until first auth callback, then render
     const onReady = () => {
       window.removeEventListener("auth:ready", onReady);
       const userNow = auth.currentUser || window.__authGetUser?.() || null;
@@ -512,7 +503,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     window.addEventListener("auth:ready", onReady);
   }
 
-  // global listeners once
   if (!window.__authGlobalListenerAttached) {
     window.__authGlobalListenerAttached = true;
 
@@ -525,13 +515,12 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
     });
 
+    // ✅ make auth active while modal open, restore after close
     window.addEventListener("modal:open", () => {
-      clearPageActiveTabs();
       for (const m of window.__authMounts) m.__btn?.classList.add("active");
     });
 
     window.addEventListener("modal:close", () => {
-      restorePageActiveTabs();
       for (const m of window.__authMounts) {
         const container = m.__btn?.parentElement;
         const st = container?.dataset?.authState || "out";
