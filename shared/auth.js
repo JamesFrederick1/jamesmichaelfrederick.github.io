@@ -13,9 +13,23 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase
 import { auth, firestore, FIRESTORE_DB_CANDIDATES } from "/shared/firebase.js";
 import { ensureSignupInjected, openSignup } from "/shared/signup.js";
 
+/**
+ * ICON / AVATAR RULES (your requested behavior):
+ * - Logged OUT:
+ *    - mobile:  /files/signedout-mobile.svg
+ *    - desktop: "Login" text (no icon)
+ * - Logged IN:
+ *    - if Firestore has avatarUrl or avatarSeed -> use that (dicebear-pfp)
+ *    - else:
+ *        - mobile:  /files/signedin-mobile.svg
+ *        - desktop: /files/signedin-desktop.svg
+ */
+
 const ASSETS = {
-  userMobile: "/files/user.svg",
-  userLoggedIn: "/files/user-loggedin.svg",
+  signedOutMobile: "/files/signedout-mobile.svg",
+  signedInMobile: "/files/signedin-mobile.svg",
+  signedInDesktop: "/files/signedin-desktop.svg",
+
   eye: "/files/eye.svg",
   eyeOff: "/files/eye-off.svg",
 };
@@ -28,25 +42,27 @@ let signinEl = null;
 
 window.__authUser = null;
 window.__authGetUser = () => window.__authUser;
+
 window.__authModalOpen = window.__authModalOpen || false;
 
-// prevents initial “logged-out flash”
+// prevents initial wrong render flash
 window.__authReady = window.__authReady || false;
+
+// used elsewhere (signup)
+window.__signupInProgress = window.__signupInProgress || false;
 
 // avatar cache
 window.__avatarCache = window.__avatarCache || new Map();
 const AVATAR_LS_PREFIX = "avatarUrl:";
 
-// mounts
+// mounts (desktop + mobile) so one listener updates all
 window.__authMounts = window.__authMounts || [];
 window.__authGlobalListenerAttached = window.__authGlobalListenerAttached || false;
 
 // ---------- Helpers ----------
 function emitAuthState(user) {
   window.__authUser = user || null;
-  window.dispatchEvent(
-    new CustomEvent("auth:state", { detail: { user: window.__authUser } })
-  );
+  window.dispatchEvent(new CustomEvent("auth:state", { detail: { user: window.__authUser } }));
 }
 
 function ensureAuthListener() {
@@ -66,11 +82,6 @@ function setModalOpenState(isOpen) {
   window.__authModalOpen = !!isOpen;
   document.body.classList.toggle("modal-open", isOpen);
   window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
-
-  // ✅ Tell banner to force-login-active / restore page active
-  if (typeof window.__bannerSetAuthModalActive === "function") {
-    window.__bannerSetAuthModalActive(!!isOpen);
-  }
 }
 
 async function ensureSigninInjected() {
@@ -153,8 +164,14 @@ function preloadImage(url, timeoutMs = 2000) {
     };
 
     const t = setTimeout(() => finish(false), timeoutMs);
-    img.onload = () => { clearTimeout(t); finish(true); };
-    img.onerror = () => { clearTimeout(t); finish(false); };
+    img.onload = () => {
+      clearTimeout(t);
+      finish(true);
+    };
+    img.onerror = () => {
+      clearTimeout(t);
+      finish(false);
+    };
     img.src = url;
   });
 }
@@ -163,30 +180,39 @@ function dicebearUrlFromSeed(seed) {
   return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`;
 }
 
-// ✅ FIX: include /account (no trailing slash) too
 function isOnAccountPage() {
   const p = (window.location.pathname || "").toLowerCase();
-  return (
-    p === "/account" ||
-    p === "/account/" ||
-    p === "/account/index.html" ||
-    p.startsWith("/account/")
-  );
+  return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
 }
 
+// Active behavior you built:
+// - while modal-open: login is active
+// - while logged-in AND on /account/: account icon active
 function computeAuthShouldBeActive(authState /* "out"|"in" */) {
   if (window.__authModalOpen) return true;
   if (authState === "in" && isOnAccountPage()) return true;
   return false;
 }
 
+function clearPageActiveTabs() {
+  document.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active").forEach((a) => {
+    a.classList.remove("active");
+  });
+  const logo = document.querySelector(".navbar .logo a.active");
+  if (logo) logo.classList.remove("active");
+}
+
+function restorePageActiveTabs() {
+  if (typeof window.__bannerApplyActiveNav === "function") window.__bannerApplyActiveNav();
+}
+
 // ---------- Avatar cache ----------
 function isPlaceholderIconUrl(url) {
   const u = String(url || "");
   return (
-    u.includes("/files/user.svg") ||
-    u.includes("/files/user-phone.svg") ||
-    u.includes("/files/user-loggedin.svg") ||
+    u.includes("/files/signedout-mobile.svg") ||
+    u.includes("/files/signedin-mobile.svg") ||
+    u.includes("/files/signedin-desktop.svg") ||
     u === "" ||
     u === "null" ||
     u === "undefined"
@@ -209,10 +235,16 @@ function getStoredAvatar(uid) {
 function setStoredAvatar(uid, url) {
   if (!uid) return;
   if (!url || isPlaceholderIconUrl(url)) return;
-  try { localStorage.setItem(AVATAR_LS_PREFIX + uid, url); } catch {}
+  try {
+    localStorage.setItem(AVATAR_LS_PREFIX + uid, url);
+  } catch {}
 }
 
-async function resolveAvatarUrl(user) {
+/**
+ * Reads avatarUrl/avatarSeed from Firestore (dicebear-pfp).
+ * Returns "" if not found or inaccessible.
+ */
+async function resolveDicebearAvatarUrl(user) {
   const mem = window.__avatarCache.get(user.uid);
   if (mem && !isPlaceholderIconUrl(mem)) return mem;
 
@@ -246,7 +278,7 @@ async function resolveAvatarUrl(user) {
           return url;
         }
       }
-      break;
+      break; // DB exists; doc missing => stop trying candidates
     } catch (e) {
       const msg = String(e?.message || "");
       if (/does not exist/i.test(msg) || e?.code === "not-found" || e?.code === "failed-precondition") continue;
@@ -254,7 +286,7 @@ async function resolveAvatarUrl(user) {
     }
   }
 
-  return ASSETS.userLoggedIn;
+  return "";
 }
 
 // ---------- Sign-in modal wiring ----------
@@ -279,6 +311,7 @@ function wireSigninHandlers() {
       e.preventDefault();
       e.stopPropagation();
       closeSignin({ clear: true });
+
       await ensureSignupInjected();
       openSignup();
     });
@@ -400,8 +433,10 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
 
   const ui = buildMount(authAreaEl);
 
+  // hide until auth is ready to prevent wrong icon flash
   ui.btn.style.visibility = window.__authReady ? "visible" : "hidden";
 
+  // click routing
   if (!authAreaEl.dataset.authWired) {
     authAreaEl.addEventListener("click", (e) => {
       const state = authAreaEl.dataset.authState || "out";
@@ -412,15 +447,14 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
 
       if (state === "in") {
-        if (variant === "mobile" || e.target.closest("#authAccountBtn")) {
-          window.location.href = "/account/";
-        }
+        if (variant === "mobile" || e.target.closest("#authAccountBtn")) window.location.href = "/account/";
       }
     });
     authAreaEl.dataset.authWired = "1";
   }
 
-  function showLoginDesktop() {
+  function showLoggedOutDesktop() {
+    // Desktop logged out is TEXT login
     ui.btn.className = "auth-btn";
     ui.btn.id = "authLoginBtn";
     ui.btn.title = "Login";
@@ -428,12 +462,13 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     if (ui.text.parentNode !== ui.btn) ui.btn.appendChild(ui.text);
   }
 
-  function showLoginMobile() {
+  function showLoggedOutMobile() {
+    // Mobile logged out is icon
     ui.btn.className = "auth-icon-btn";
     ui.btn.id = "authLoginBtn";
     ui.btn.title = "Login";
     ui.img.alt = "Login";
-    ui.img.src = ASSETS.userMobile;
+    ui.img.src = ASSETS.signedOutMobile;
     if (ui.text.parentNode === ui.btn) ui.btn.removeChild(ui.text);
     if (ui.img.parentNode !== ui.btn) ui.btn.appendChild(ui.img);
   }
@@ -443,10 +478,16 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     ui.btn.classList.toggle("active", computeAuthShouldBeActive(st));
   }
 
+  function getSignedInFallbackForVariant() {
+    return variant === "desktop" ? ASSETS.signedInDesktop : ASSETS.signedInMobile;
+  }
+
   async function renderLoggedOut() {
     authAreaEl.dataset.authState = "out";
-    if (variant === "mobile") showLoginMobile();
-    else showLoginDesktop();
+
+    if (variant === "mobile") showLoggedOutMobile();
+    else showLoggedOutDesktop();
+
     applyActiveClass();
     ui.btn.style.visibility = "visible";
   }
@@ -454,6 +495,7 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
   async function renderLoggedIn(user) {
     authAreaEl.dataset.authState = "in";
 
+    // Signed IN is always icon button (desktop + mobile), but fallback differs.
     ui.btn.className = "auth-icon-btn";
     ui.btn.id = "authAccountBtn";
     ui.btn.title = user.email || "";
@@ -464,31 +506,38 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     ui.img.id = "authAvatar";
     ui.img.alt = "Account";
 
+    const fallback = getSignedInFallbackForVariant();
+
+    // Use cached/stored dicebear immediately if available (prevents flicker)
     const mem = window.__avatarCache.get(user.uid);
     const stored = getStoredAvatar(user.uid);
     const immediate =
       (!isPlaceholderIconUrl(mem) && mem) ||
       stored ||
       (!isPlaceholderIconUrl(ui.img.src) && ui.img.src) ||
-      ASSETS.userLoggedIn;
+      fallback;
 
     ui.img.src = immediate;
-    ui.img.onerror = () => (ui.img.src = ASSETS.userLoggedIn);
+    ui.img.onerror = () => (ui.img.src = fallback);
 
     applyActiveClass();
     ui.btn.style.visibility = "visible";
 
+    // ignore any transient sign-in during signup flow
     if (window.__signupInProgress) return;
 
-    const url = await resolveAvatarUrl(user);
-    if (url && url !== ui.img.src) {
-      const ok = await preloadImage(url, 2000);
-      if (ok) ui.img.src = url;
+    // Try dicebear from Firestore; if found, preload then swap.
+    const dicebear = await resolveDicebearAvatarUrl(user);
+    if (dicebear && dicebear !== ui.img.src) {
+      const ok = await preloadImage(dicebear, 2000);
+      if (ok) ui.img.src = dicebear;
     }
   }
 
+  // register mount
   window.__authMounts.push({ renderLoggedIn, renderLoggedOut, __btn: ui.btn });
 
+  // initial render
   if (window.__authReady) {
     const userNow = auth.currentUser || window.__authGetUser?.() || null;
     if (userNow && !window.__signupInProgress) renderLoggedIn(userNow);
@@ -503,6 +552,7 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     window.addEventListener("auth:ready", onReady);
   }
 
+  // global listeners once
   if (!window.__authGlobalListenerAttached) {
     window.__authGlobalListenerAttached = true;
 
@@ -515,12 +565,15 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
     });
 
-    // ✅ make auth active while modal open, restore after close
+    // When modal opens: clear page active tabs; highlight login button(s)
     window.addEventListener("modal:open", () => {
+      clearPageActiveTabs();
       for (const m of window.__authMounts) m.__btn?.classList.add("active");
     });
 
+    // When modal closes: restore page active tabs; re-apply auth active state
     window.addEventListener("modal:close", () => {
+      restorePageActiveTabs();
       for (const m of window.__authMounts) {
         const container = m.__btn?.parentElement;
         const st = container?.dataset?.authState || "out";
@@ -528,6 +581,7 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
       }
     });
 
+    // If you ever do SPA-style nav, keep active in sync
     window.addEventListener("popstate", () => {
       for (const m of window.__authMounts) {
         const container = m.__btn?.parentElement;
