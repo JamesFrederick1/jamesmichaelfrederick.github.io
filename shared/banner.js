@@ -20,6 +20,9 @@ import { initAuthButton } from "/shared/auth.js";
   mount.__authModalOpen = false;
   let __inSetAuth = false;
 
+  // ✅ Fix “spam click login stays active” across page transitions
+  cleanupStaleModalState();
+
   window.__bannerApplyActiveNav = () => {
     if (mount.__authModalOpen || document.body.classList.contains("modal-open")) return;
     setActiveNav(mount);
@@ -72,6 +75,13 @@ import { initAuthButton } from "/shared/auth.js";
         clearAllActives();
         setAuthActive(true);
 
+        // ✅ DESKTOP + MOBILE: HOME → LOGIN should be NO ANIM but spotlight should move to login instantly
+        if (isHomePath()) {
+          syncMobileSpotlight(mount, { instant: true });
+          syncDesktopSpotlight(mount, { instant: true });
+          return;
+        }
+
         // MOBILE: animate to auth slot
         if (bottomNav) {
           const s = bottomNav.querySelector(".nav-spotlight");
@@ -96,6 +106,13 @@ import { initAuthButton } from "/shared/auth.js";
       clearAllActives();
       setActiveNav(mount);
       applyAccountAsActiveTab(mount);
+
+      // ✅ LOGIN → HOME (cancel modal on home) should be NO ANIM but spotlight should move to home instantly
+      if (isHomePath()) {
+        syncMobileSpotlight(mount, { instant: true });
+        syncDesktopSpotlight(mount, { instant: true });
+        return;
+      }
 
       if (bottomNav) {
         const s = bottomNav.querySelector(".nav-spotlight");
@@ -168,6 +185,18 @@ import { initAuthButton } from "/shared/auth.js";
   });
 
   // -------------------- HELPERS --------------------
+
+  function cleanupStaleModalState() {
+    // If a previous page left modal-open class around, kill it on load
+    mount.__authModalOpen = false;
+    window.__authModalOpen = false;
+
+    const modal = document.getElementById("id01");
+    if (modal) modal.style.display = "none";
+
+    document.body.classList.remove("modal-open");
+    document.body.style.overflow = "";
+  }
 
   function normalizePath(p) {
     if (!p) return "/index.html";
@@ -282,6 +311,7 @@ import { initAuthButton } from "/shared/auth.js";
 
       const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
 
+      // ✅ When modal is open, clicking a nav link should CLOSE modal then animate (except HOME = instant)
       if (isModalOpen) {
         const link = e.target.closest("a[href]");
         if (!link) {
@@ -298,6 +328,15 @@ import { initAuthButton } from "/shared/auth.js";
         forceCloseSigninModal();
         await window.__bannerSetAuthModalActive?.(false);
 
+        const targetPath = normalizePath(href);
+        if (targetPath === "/index.html") {
+          window.location.href = href;
+          return;
+        }
+
+        // ✅ IMPORTANT: capture FROM before changing actives
+        bottomNav.__spotIndex = findIndex(getMobileTargets(bottomNav), getActiveMobileTarget(bottomNav));
+
         bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
         link.classList.add("active");
 
@@ -306,6 +345,7 @@ import { initAuthButton } from "/shared/auth.js";
         return;
       }
 
+      // auth slot click -> auth.js opens modal; banner handles open
       if (e.target.closest("#mobileAuthBtn")) return;
 
       const link = e.target.closest("a[href]");
@@ -326,6 +366,9 @@ import { initAuthButton } from "/shared/auth.js";
       if (isSame) return;
 
       e.preventDefault();
+
+      // ✅ IMPORTANT: capture FROM before changing actives (fixes account -> anywhere missing animation)
+      bottomNav.__spotIndex = findIndex(getMobileTargets(bottomNav), getActiveMobileTarget(bottomNav));
 
       bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
       link.classList.add("active");
@@ -457,6 +500,46 @@ import { initAuthButton } from "/shared/auth.js";
     topNav.classList.add("has-spotlight");
     topNav.__spotIndex = null;
 
+    // ✅ When modal open: click link => close modal, then (HOME instant, else animate to link)
+    topNav.addEventListener(
+      "click",
+      async (e) => {
+        if (window.innerWidth <= 600) return;
+
+        const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
+        if (!isModalOpen) return;
+
+        const link = e.target.closest("a[href]");
+        if (!link) return;
+
+        const href = link.getAttribute("href") || "";
+        if (!href || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("#")) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+
+        forceCloseSigninModal();
+        await window.__bannerSetAuthModalActive?.(false);
+
+        const targetPath = normalizePath(href);
+        if (targetPath === "/index.html") {
+          window.location.href = href;
+          return;
+        }
+
+        // ✅ IMPORTANT: capture FROM before changing actives
+        topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
+
+        mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
+        link.classList.add("active");
+
+        await animateDesktopSpotlightTo(topNav, topNav.querySelector(".nav-spotlight"), link);
+        window.location.href = href;
+      },
+      true
+    );
+
     // CAPTURE interceptor for auth button (account anims)
     topNav.addEventListener(
       "click",
@@ -479,6 +562,9 @@ import { initAuthButton } from "/shared/auth.js";
         e.stopPropagation();
         e.stopImmediatePropagation?.();
 
+        // ✅ IMPORTANT: capture FROM before changing actives
+        topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
+
         mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
         accountBtn?.classList.add("active");
 
@@ -500,7 +586,7 @@ import { initAuthButton } from "/shared/auth.js";
       if (window.innerWidth <= 600) return;
 
       const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
-      if (isModalOpen) return; // modal logic handled elsewhere
+      if (isModalOpen) return;
 
       // logo click -> always instant
       const logoA = e.target.closest(".logo a");
@@ -528,14 +614,14 @@ import { initAuthButton } from "/shared/auth.js";
 
       if (isSame) return;
 
-      // ✅ NO spotlight updates AT ALL when leaving HOME
+      // leave HOME to other pages is instant (your existing rule)
       if (isHomePath() && targetPath !== "/index.html") {
         e.preventDefault();
         window.location.href = href;
         return;
       }
 
-      // ✅ also no animation TO HOME (instant)
+      // no animation TO HOME
       if (targetPath === "/index.html") {
         e.preventDefault();
         window.location.href = href;
@@ -543,6 +629,9 @@ import { initAuthButton } from "/shared/auth.js";
       }
 
       e.preventDefault();
+
+      // ✅ IMPORTANT: capture FROM before changing actives
+      topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
 
       mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
       link.classList.add("active");
@@ -582,7 +671,8 @@ import { initAuthButton } from "/shared/auth.js";
     if (aActive) return aActive;
 
     const authActive =
-      topNav.querySelector("#authArea #authLoginBtn.active") || topNav.querySelector("#authArea #authAccountBtn.active");
+      topNav.querySelector("#authArea #authLoginBtn.active") ||
+      topNav.querySelector("#authArea #authAccountBtn.active");
     if (authActive) return authActive;
 
     if (logoA && isHomePath()) return logoA;
@@ -594,7 +684,7 @@ import { initAuthButton } from "/shared/auth.js";
     return Math.max(lo, Math.min(hi, v));
   }
 
-  function sizeDesktopSpotForTarget(spot, targetEl, mountEl) {
+  function sizeDesktopSpotForTarget(spot, targetEl) {
     if (!spot || !targetEl) return;
 
     const isLogo = !!targetEl.closest?.(".logo");
@@ -603,7 +693,6 @@ import { initAuthButton } from "/shared/auth.js";
 
     let w, h;
 
-    // ✅ HOME spotlight: extremely subtle (prevents “white wash”)
     if (isLogo) {
       w = 30;
       h = 30;
@@ -627,9 +716,9 @@ import { initAuthButton } from "/shared/auth.js";
     spot.style.borderRadius = "999px";
   }
 
-  async function ensureDesktopSpotReady(spot, targetEl, mountEl) {
+  async function ensureDesktopSpotReady(spot, targetEl) {
     await new Promise((r) => requestAnimationFrame(r));
-    sizeDesktopSpotForTarget(spot, targetEl, mountEl);
+    sizeDesktopSpotForTarget(spot, targetEl);
     await new Promise((r) => requestAnimationFrame(r));
     if (spot.offsetWidth === 0) spot.style.width = "80px";
     if (spot.offsetHeight === 0) spot.style.height = "38px";
@@ -645,7 +734,7 @@ import { initAuthButton } from "/shared/auth.js";
   async function animateDesktopSpotlightTo(topNav, spot, targetEl) {
     if (!topNav || !spot || !targetEl) return;
 
-    await ensureDesktopSpotReady(spot, targetEl, mount);
+    await ensureDesktopSpotReady(spot, targetEl);
 
     const targets = getDesktopTargets(topNav, mount);
     if (!targets.length) return;
@@ -659,14 +748,14 @@ import { initAuthButton } from "/shared/auth.js";
     const to = findIndex(targets, targetEl);
     if (to < 0) return;
 
-    sizeDesktopSpotForTarget(spot, targets[from], mount);
+    sizeDesktopSpotForTarget(spot, targets[from]);
     const x0 = xForDesktopTarget(topNav, spot, targets[from]);
 
     spot.style.transition = "none";
     spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
     await new Promise((r) => requestAnimationFrame(r));
 
-    sizeDesktopSpotForTarget(spot, targets[to], mount);
+    sizeDesktopSpotForTarget(spot, targets[to]);
     const x1 = xForDesktopTarget(topNav, spot, targets[to]);
 
     spot.style.transition =
@@ -690,11 +779,10 @@ import { initAuthButton } from "/shared/auth.js";
     topNav.__spotIndex = idx;
 
     requestAnimationFrame(async () => {
-      await ensureDesktopSpotReady(spot, targets[idx], mountEl);
+      await ensureDesktopSpotReady(spot, targets[idx]);
       const x = xForDesktopTarget(topNav, spot, targets[idx]);
 
       if (instant) {
-        // IMPORTANT: do NOT "restore" transition on next frame (prevents stretch/glitch)
         spot.style.transition = "none";
         spot.style.transform = `translate3d(${x}px, -50%, 0)`;
       } else {
