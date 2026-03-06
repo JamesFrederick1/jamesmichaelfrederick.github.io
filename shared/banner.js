@@ -12,190 +12,253 @@ import { initAuthButton } from "/shared/auth.js";
   }
   mount.innerHTML = await res.text();
 
-  // Liquid glass
   mount.querySelector(".navbar")?.classList.add("liquid-glass", "glass-no-clip");
   mount.querySelector(".navbar-bottom")?.classList.add("liquid-glass");
 
-  // -------------------- STATE --------------------
   mount.__authModalOpen = false;
-  let __inSetAuth = false;
+  mount.__navBusy = false;
+  mount.__closeTimer = null;
+  mount.__savedDesktopHref = "";
+  mount.__savedMobileHref = "";
+  mount.__ignoreMobileUntil = 0;
+  mount.__bannerOpenedAuth = false;
 
-  // ✅ Fix “spam click login stays active” across page transitions
   cleanupStaleModalState();
 
-  window.__bannerApplyActiveNav = () => {
-    if (mount.__authModalOpen || document.body.classList.contains("modal-open")) return;
-    setActiveNav(mount);
-    applyAccountAsActiveTab(mount);
-    syncMobileSpotlight(mount, { instant: true });
-    syncDesktopSpotlight(mount, { instant: true });
-  };
-
-  window.__bannerSetAuthModalActive = async (isOpen) => {
-    if (__inSetAuth) return;
-    __inSetAuth = true;
-
-    try {
-      mount.__authModalOpen = !!isOpen;
-
-      const bottomNav = mount.querySelector(".navbar-bottom nav");
-      const topNav = mount.querySelector(".navbar nav");
-
-      if (bottomNav && !bottomNav.querySelector(".nav-spotlight")) initMobileSpotlight(mount);
-      if (topNav && !topNav.querySelector(".nav-spotlight")) initDesktopSpotlight(mount);
-
-      const clearAllActives = () => {
-        mount
-          .querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active")
-          .forEach((el) => el.classList.remove("active"));
-        mount.querySelector("#authArea #authLoginBtn")?.classList.remove("active");
-        mount.querySelector("#authArea #authAccountBtn")?.classList.remove("active");
-        mount.querySelector("#mobileAuthBtn button")?.classList.remove("active");
-        mount.querySelector("#mobileAuthBtn")?.classList.remove("active");
-      };
-
-      const setAuthActive = (active) => {
-        const desktopLoginBtn = mount.querySelector("#authArea #authLoginBtn");
-        const desktopAccountBtn = mount.querySelector("#authArea #authAccountBtn");
-        desktopLoginBtn?.classList.toggle("active", !!active && !!desktopLoginBtn);
-        desktopAccountBtn?.classList.toggle("active", !!active && !!desktopAccountBtn);
-
-        const mobileAuthBtn =
-          mount.querySelector("#mobileAuthBtn button") || mount.querySelector("#mobileAuthBtn");
-        mobileAuthBtn?.classList.toggle("active", !!active);
-      };
-
-      if (isOpen) {
-        const activeBottom = mount.querySelector(".navbar-bottom nav a.active");
-        const activeTop = mount.querySelector(".navbar nav a.active");
-        mount.__savedActiveHrefBottom = activeBottom?.getAttribute("href") || "";
-        mount.__savedActiveHrefTop = activeTop?.getAttribute("href") || "";
-        mount.__savedLogoActive = mount.querySelector(".logo a")?.classList.contains("active") || false;
-
-        clearAllActives();
-        setAuthActive(true);
-
-        // ✅ DESKTOP + MOBILE: HOME → LOGIN should be NO ANIM but spotlight should move to login instantly
-        if (isHomePath()) {
-          syncMobileSpotlight(mount, { instant: true });
-          syncDesktopSpotlight(mount, { instant: true });
-          return;
-        }
-
-        // MOBILE: animate to auth slot
-        if (bottomNav) {
-          const s = bottomNav.querySelector(".nav-spotlight");
-          const authTarget =
-            bottomNav.querySelector("#mobileAuthBtn button") || bottomNav.querySelector("#mobileAuthBtn");
-          if (s && authTarget) await animateSpotlightTo(bottomNav, s, authTarget);
-          else syncMobileSpotlight(mount, { instant: true });
-        }
-
-        // DESKTOP: animate to auth (login/account)
-        if (topNav) {
-          const s = topNav.querySelector(".nav-spotlight");
-          const authTarget =
-            topNav.querySelector("#authArea #authLoginBtn") || topNav.querySelector("#authArea #authAccountBtn");
-          if (s && authTarget) await animateDesktopSpotlightTo(topNav, s, authTarget);
-          else syncDesktopSpotlight(mount, { instant: true });
-        }
-
-        return;
-      }
-
-      clearAllActives();
-      setActiveNav(mount);
-      applyAccountAsActiveTab(mount);
-
-      // ✅ LOGIN → HOME (cancel modal on home) should be NO ANIM but spotlight should move to home instantly
-      if (isHomePath()) {
-        syncMobileSpotlight(mount, { instant: true });
-        syncDesktopSpotlight(mount, { instant: true });
-        return;
-      }
-
-      if (bottomNav) {
-        const s = bottomNav.querySelector(".nav-spotlight");
-        const authTarget =
-          bottomNav.querySelector("#mobileAuthBtn button") || bottomNav.querySelector("#mobileAuthBtn");
-        const onAccount = isAccountPath();
-        const targetEl = onAccount ? authTarget : getActiveMobileTarget(bottomNav);
-        if (s && targetEl) await animateSpotlightTo(bottomNav, s, targetEl);
-        else syncMobileSpotlight(mount, { instant: true });
-      }
-
-      if (topNav) {
-        const s = topNav.querySelector(".nav-spotlight");
-        const authBtn =
-          topNav.querySelector("#authArea #authAccountBtn") || topNav.querySelector("#authArea #authLoginBtn");
-        const onAccount = isAccountPath();
-        const targetEl = onAccount ? authBtn : getActiveDesktopTarget(topNav, mount);
-        if (s && targetEl) await animateDesktopSpotlightTo(topNav, s, targetEl);
-        else syncDesktopSpotlight(mount, { instant: true });
-      }
-    } finally {
-      __inSetAuth = false;
-    }
-  };
-
-  // initial actives
-  setActiveNav(mount);
-  setNavHeight(mount);
-
-  // auth mounts
   let authArea = mount.querySelector("#authArea");
   if (!authArea) {
     authArea = document.createElement("span");
     authArea.id = "authArea";
-    authArea.classList.add("auth-area");
+    authArea.className = "auth-area";
     const nav = mount.querySelector(".navbar nav");
     if (nav) nav.appendChild(authArea);
-    else mount.appendChild(authArea);
   }
   await initAuthButton(authArea, { variant: "desktop" });
 
-  const mobileAuthBtn = mount.querySelector("#mobileAuthBtn");
-  if (mobileAuthBtn) {
-    mobileAuthBtn.textContent = "";
-    await initAuthButton(mobileAuthBtn, { variant: "mobile" });
+  const mobileAuthRoot = mount.querySelector("#mobileAuthBtn");
+  if (mobileAuthRoot) {
+    mobileAuthRoot.textContent = "";
+    await initAuthButton(mobileAuthRoot, { variant: "mobile" });
   }
 
-  initMobileSpotlight(mount);
-  initDesktopSpotlight(mount);
-  applyAccountAsActiveTab(mount);
+  setActiveNav();
+  applyAccountAsActiveTab();
+  setNavHeight();
+  setBottomNavHeight();
+
+  initMobileSpotlight();
+  initDesktopSpotlight();
+
+  syncMobileSpotlight({ instant: true });
+  syncDesktopSpotlight({ instant: true });
+
+  window.__bannerApplyActiveNav = () => {
+    if (isAuthOverlayOpen()) {
+      forceAuthActiveUI();
+      return;
+    }
+    clearSavedTargets();
+    setActiveNav();
+    applyAccountAsActiveTab();
+    syncMobileSpotlight({ instant: true });
+    syncDesktopSpotlight({ instant: true });
+  };
+
+  window.addEventListener("modal:open", async () => {
+    cancelPendingClose();
+    await openAuthState();
+  });
+
+  window.addEventListener("modal:close", () => {
+    scheduleCloseRelease();
+  });
 
   window.addEventListener("auth:state", () => {
-    if (mount.__authModalOpen || document.body.classList.contains("modal-open")) return;
-    setActiveNav(mount);
-    applyAccountAsActiveTab(mount);
-    syncMobileSpotlight(mount, { instant: true });
-    syncDesktopSpotlight(mount, { instant: true });
+    if (isAuthOverlayOpen()) {
+      forceAuthActiveUI();
+      return;
+    }
+    clearSavedTargets();
+    setActiveNav();
+    applyAccountAsActiveTab();
+    syncMobileSpotlight({ instant: true });
+    syncDesktopSpotlight({ instant: true });
   });
 
-  window.addEventListener("modal:open", () => window.__bannerSetAuthModalActive?.(true));
-  window.addEventListener("modal:close", () => window.__bannerSetAuthModalActive?.(false));
-
-  setBottomNavHeight();
   window.addEventListener("resize", () => {
     setBottomNavHeight();
-    if (!(mount.__authModalOpen || document.body.classList.contains("modal-open"))) {
-      syncMobileSpotlight(mount, { instant: true });
-      syncDesktopSpotlight(mount, { instant: true });
+    if (isAuthOverlayOpen()) {
+      forceAuthActiveUI();
+      return;
     }
+    syncMobileSpotlight({ instant: true });
+    syncDesktopSpotlight({ instant: true });
   });
 
-  // -------------------- HELPERS --------------------
+  window.addEventListener("focus", () => {
+    if (isAuthOverlayOpen()) forceAuthActiveUI();
+  });
+
+  async function openAuthState() {
+    mount.__authModalOpen = true;
+
+    if (mount.__bannerOpenedAuth) {
+      mount.__bannerOpenedAuth = false;
+      clearAllActives();
+      setAuthActive(true);
+      await settleLayout();
+      syncMobileSpotlight({ instant: true });
+      syncDesktopSpotlight({ instant: true });
+      return;
+    }
+
+    saveUnderlyingTargets();
+
+    const prevDesktop = getCurrentDesktopTarget();
+    const prevMobile = getCurrentMobileTarget();
+
+    clearAllActives();
+    setAuthActive(true);
+    await settleLayout();
+
+    if (isMobileView()) {
+      const bottomNav = getBottomNav();
+      const authTarget = getMobileAuthTarget();
+
+      if (bottomNav && authTarget) {
+        bottomNav.__spotIndex = indexOfTarget(getMobileTargets(), prevMobile || authTarget);
+        await animateMobileTo(authTarget);
+      } else {
+        syncMobileSpotlight({ instant: true });
+      }
+
+      syncDesktopSpotlight({ instant: true });
+      return;
+    }
+
+    if (isHomePath()) {
+      hardSnapDesktopSpotlight();
+      syncMobileSpotlight({ instant: true });
+      return;
+    }
+
+    const topNav = getTopNav();
+    const authTarget = getDesktopAuthTarget();
+    if (topNav && authTarget) {
+      topNav.__spotIndex = indexOfTarget(getDesktopTargets(), prevDesktop || authTarget);
+      await animateDesktopTo(authTarget);
+    } else {
+      syncDesktopSpotlight({ instant: true });
+    }
+
+    syncMobileSpotlight({ instant: true });
+  }
+
+  function scheduleCloseRelease() {
+    cancelPendingClose();
+
+    mount.__closeTimer = setTimeout(async () => {
+      mount.__closeTimer = null;
+
+      // Critical: mark banner-auth closed first so close logic can actually run
+      mount.__authModalOpen = false;
+      window.__authModalOpen = false;
+
+      // If another overlay immediately reopened (signin -> signup handoff), stop here
+      if (isExternalOverlayOpen()) return;
+
+      mount.__ignoreMobileUntil = performance.now() + 180;
+
+      clearAllActives();
+      setActiveNav();
+      applyAccountAsActiveTab();
+      await settleLayout();
+
+      if (isMobileView()) {
+        const bottomNav = getBottomNav();
+        const target = isAccountPath() ? getMobileAuthTarget() : getSavedMobileTarget();
+
+        clearAllActives();
+        setActiveNav();
+        applyAccountAsActiveTab();
+        await settleLayout();
+
+        if (bottomNav && target) {
+          bottomNav.__spotIndex = indexOfTarget(getMobileTargets(), getMobileAuthTarget() || target);
+          await animateMobileTo(target);
+        } else {
+          syncMobileSpotlight({ instant: true });
+        }
+
+        clearSavedTargets();
+        syncDesktopSpotlight({ instant: true });
+        return;
+      }
+
+      const returnTarget = isAccountPath() ? getDesktopAuthTarget() : getSavedDesktopTarget();
+
+      clearAllActives();
+      setActiveNav();
+      applyAccountAsActiveTab();
+      await settleLayout();
+
+      if (!returnTarget || targetHref(returnTarget) === "/index.html" || isHomePath()) {
+        hardSnapDesktopSpotlight();
+        clearSavedTargets();
+        syncMobileSpotlight({ instant: true });
+        return;
+      }
+
+      const topNav = getTopNav();
+      if (topNav) {
+        topNav.__spotIndex = indexOfTarget(getDesktopTargets(), getDesktopAuthTarget() || returnTarget);
+        await animateDesktopTo(returnTarget);
+      } else {
+        syncDesktopSpotlight({ instant: true });
+      }
+
+      clearSavedTargets();
+      syncMobileSpotlight({ instant: true });
+    }, 70);
+  }
+
+  function cancelPendingClose() {
+    if (mount.__closeTimer) {
+      clearTimeout(mount.__closeTimer);
+      mount.__closeTimer = null;
+    }
+  }
+
+  function isMobileView() {
+    return window.innerWidth <= 600;
+  }
+
+  function getAuthUser() {
+    return (typeof window.__authGetUser === "function" ? window.__authGetUser() : null) || window.__authUser || null;
+  }
+
+  function isAuthOverlayOpen() {
+    return !!window.__authOverlayOpen || !!mount.__authModalOpen || document.body.classList.contains("modal-open");
+  }
+
+  function isExternalOverlayOpen() {
+    return !!window.__authOverlayOpen || document.body.classList.contains("modal-open");
+  }
 
   function cleanupStaleModalState() {
-    // If a previous page left modal-open class around, kill it on load
     mount.__authModalOpen = false;
     window.__authModalOpen = false;
+    window.__authOverlayOpen = null;
 
-    const modal = document.getElementById("id01");
-    if (modal) modal.style.display = "none";
+    const signin = document.getElementById("id01");
+    if (signin) signin.style.display = "none";
+
+    const signup = document.getElementById("signupModal");
+    if (signup) signup.style.display = "none";
 
     document.body.classList.remove("modal-open");
     document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
   }
 
   function normalizePath(p) {
@@ -206,9 +269,13 @@ import { initAuthButton } from "/shared/auth.js";
     return x;
   }
 
-  function isAccountPath() {
-    const p = (window.location.pathname || "").toLowerCase();
-    return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
+  function toComparable(href) {
+    const p = normalizePath(href || "");
+    return p.endsWith("/") ? `${p}index.html` : p;
+  }
+
+  function currentComparablePath() {
+    return toComparable(window.location.pathname || "/index.html");
   }
 
   function isHomePath() {
@@ -216,56 +283,217 @@ import { initAuthButton } from "/shared/auth.js";
     return p === "/" || p === "/index.html";
   }
 
-  function setActiveNav(mountEl) {
-    const current = normalizePath(window.location.pathname);
+  function isAccountPath() {
+    const p = (window.location.pathname || "").toLowerCase();
+    return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
+  }
 
-    mountEl
-      .querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active")
-      .forEach((el) => el.classList.remove("active"));
+  function isLocalNavHref(href) {
+    if (!href) return false;
+    if (href.startsWith("http")) return false;
+    if (href.startsWith("mailto:")) return false;
+    if (href.startsWith("#")) return false;
+    return true;
+  }
 
-    mountEl.querySelectorAll(".navbar nav a, .navbar-bottom nav a").forEach((a) => {
-      const hrefRaw = a.getAttribute("href") || "";
-      const href = normalizePath(hrefRaw);
-      const hrefIndex = href.endsWith("/") ? href + "index.html" : href;
+  function lockNav() {
+    if (mount.__navBusy) return false;
+    mount.__navBusy = true;
+    return true;
+  }
 
-      const isActive =
-        current === href ||
-        current === hrefIndex ||
-        (href.endsWith("/") && current.startsWith(href));
+  function unlockNav() {
+    mount.__navBusy = false;
+  }
 
-      a.classList.toggle("active", isActive);
+  function waitFrame() {
+    return new Promise((r) => requestAnimationFrame(() => r()));
+  }
+
+  async function settleLayout() {
+    await waitFrame();
+    await waitFrame();
+  }
+
+  function getTopNav() {
+    return mount.querySelector(".navbar nav");
+  }
+
+  function getBottomNav() {
+    return mount.querySelector(".navbar-bottom nav");
+  }
+
+  function getDesktopSpot() {
+    return getTopNav()?.querySelector(".nav-spotlight") || null;
+  }
+
+  function getMobileSpot() {
+    return getBottomNav()?.querySelector(".nav-spotlight") || null;
+  }
+
+  function clearAllActives() {
+    mount.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active").forEach((el) => {
+      el.classList.remove("active");
+    });
+    mount.querySelector("#authArea #authLoginBtn")?.classList.remove("active");
+    mount.querySelector("#authArea #authAccountBtn")?.classList.remove("active");
+    mount.querySelector("#mobileAuthBtn")?.classList.remove("active");
+    mount.querySelector("#mobileAuthBtn button")?.classList.remove("active");
+  }
+
+  function setAuthActive(active) {
+    mount.querySelector("#authArea #authLoginBtn")?.classList.toggle("active", !!active);
+    mount.querySelector("#authArea #authAccountBtn")?.classList.toggle("active", !!active);
+    getMobileAuthTarget()?.classList.toggle("active", !!active);
+  }
+
+  function setActiveNav() {
+    const current = currentComparablePath();
+
+    mount.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active, .logo a.active").forEach((el) => {
+      el.classList.remove("active");
     });
 
-    const logoLink = mountEl.querySelector(".logo a");
-    if (logoLink) logoLink.classList.toggle("active", isHomePath());
+    mount.querySelectorAll(".navbar nav a, .navbar-bottom nav a").forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      const comp = toComparable(href);
+      const raw = normalizePath(href);
+
+      const active =
+        current === comp ||
+        (raw.endsWith("/") && normalizePath(window.location.pathname).startsWith(raw));
+
+      a.classList.toggle("active", active);
+    });
+
+    mount.querySelector(".logo a")?.classList.toggle("active", isHomePath());
+    mount.querySelector("#authArea #authLoginBtn")?.classList.remove("active");
+    mount.querySelector("#authArea #authAccountBtn")?.classList.remove("active");
+    getMobileAuthTarget()?.classList.remove("active");
   }
 
-  function applyAccountAsActiveTab(mountEl) {
-    const onAccount = isAccountPath();
+  function applyAccountAsActiveTab() {
+    if (!isAccountPath()) return;
 
-    const topNav = mountEl.querySelector(".navbar nav");
-    if (onAccount && topNav) {
-      topNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
-      mountEl.querySelector(".logo a")?.classList.remove("active");
-    }
+    mount.querySelector(".navbar nav")?.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
+    mount.querySelector(".navbar .logo a")?.classList.remove("active");
+    mount.querySelector(".navbar-bottom nav")?.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
 
-    const desktopBtn =
-      mountEl.querySelector("#authArea #authAccountBtn") ||
-      mountEl.querySelector("#authArea #authLoginBtn");
-    if (desktopBtn) desktopBtn.classList.toggle("active", onAccount);
-
-    const bottomNav = mountEl.querySelector(".navbar-bottom nav");
-    if (!bottomNav) return;
-
-    const mobileBtn =
-      bottomNav.querySelector("#mobileAuthBtn button") || bottomNav.querySelector("#mobileAuthBtn");
-    if (mobileBtn) mobileBtn.classList.toggle("active", onAccount);
-
-    if (onAccount) bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
+    mount.querySelector("#authArea #authAccountBtn")?.classList.add("active");
+    getMobileAuthTarget()?.classList.add("active");
   }
 
-  function setNavHeight(mountEl) {
-    const nav = mountEl.querySelector(".navbar");
+  function clearSavedTargets() {
+    mount.__savedDesktopHref = "";
+    mount.__savedMobileHref = "";
+  }
+
+  function saveUnderlyingTargets() {
+    mount.__savedDesktopHref = targetHref(getCurrentDesktopTarget());
+    mount.__savedMobileHref = targetHref(getCurrentMobileTarget());
+  }
+
+  function targetHref(el) {
+    if (!el) return "";
+    if (el.closest?.(".logo")) return "/index.html";
+    if (el.id === "authAccountBtn") return "/account/";
+    return el.getAttribute?.("href") || "";
+  }
+
+  function getDesktopAuthTarget() {
+    return mount.querySelector("#authArea #authAccountBtn") || mount.querySelector("#authArea #authLoginBtn") || null;
+  }
+
+  function getMobileAuthTarget() {
+    const root = mount.querySelector("#mobileAuthBtn");
+    if (!root) return null;
+    return root.querySelector("button") || root;
+  }
+
+  function getDesktopTargets() {
+    const topNav = getTopNav();
+    const logo = mount.querySelector(".navbar .logo a");
+    const links = Array.from(topNav?.querySelectorAll("a") || []).filter((a) => !a.closest("#authArea"));
+    const auth = getDesktopAuthTarget();
+    const out = [];
+    if (logo) out.push(logo);
+    out.push(...links);
+    if (auth) out.push(auth);
+    return out;
+  }
+
+  function getMobileTargets() {
+    const bottomNav = getBottomNav();
+    const links = Array.from(bottomNav?.querySelectorAll(":scope > a") || []);
+    const auth = getMobileAuthTarget();
+    return auth ? [...links, auth] : links;
+  }
+
+  function getCurrentDesktopTarget() {
+    const authActive =
+      mount.querySelector("#authArea #authAccountBtn.active") ||
+      mount.querySelector("#authArea #authLoginBtn.active");
+    if (authActive) return authActive;
+
+    const logo = mount.querySelector(".navbar .logo a");
+    if (isAccountPath()) return getDesktopAuthTarget();
+    if (logo?.classList.contains("active")) return logo;
+
+    const topNav = getTopNav();
+    const pageActive = Array.from(topNav?.querySelectorAll("a.active") || []).find((a) => !a.closest("#authArea"));
+    if (pageActive) return pageActive;
+
+    if (isHomePath()) return logo;
+    return pageActive || getDesktopAuthTarget() || logo || null;
+  }
+
+  function getCurrentMobileTarget() {
+    const auth = getMobileAuthTarget();
+    const bottomNav = getBottomNav();
+
+    if (auth?.classList.contains("active")) return auth;
+    if (isAccountPath()) return auth;
+
+    const pageActive = Array.from(bottomNav?.querySelectorAll(":scope > a.active") || [])[0];
+    if (pageActive) return pageActive;
+
+    return Array.from(bottomNav?.querySelectorAll(":scope > a") || [])[0] || auth || null;
+  }
+
+  function getSavedDesktopTarget() {
+    const saved = mount.__savedDesktopHref || "";
+    const topNav = getTopNav();
+    const logo = mount.querySelector(".navbar .logo a");
+
+    if (!saved) return getCurrentDesktopTarget();
+
+    if (toComparable(saved) === "/index.html") return logo;
+    if (toComparable(saved) === "/account/index.html") return getDesktopAuthTarget();
+
+    const exact = Array.from(topNav?.querySelectorAll("a[href]") || []).find(
+      (a) => !a.closest("#authArea") && toComparable(a.getAttribute("href") || "") === toComparable(saved)
+    );
+    return exact || getCurrentDesktopTarget();
+  }
+
+  function getSavedMobileTarget() {
+    const saved = mount.__savedMobileHref || "";
+    const bottomNav = getBottomNav();
+
+    if (!saved) return getCurrentMobileTarget();
+
+    const exact = Array.from(bottomNav?.querySelectorAll(":scope > a[href]") || []).find(
+      (a) => toComparable(a.getAttribute("href") || "") === toComparable(saved)
+    );
+    return exact || getCurrentMobileTarget();
+  }
+
+  function indexOfTarget(targets, el) {
+    return targets.findIndex((t) => t === el);
+  }
+
+  function setNavHeight() {
+    const nav = mount.querySelector(".navbar");
     if (!nav) return;
 
     const apply = () => {
@@ -289,401 +517,6 @@ import { initAuthButton } from "/shared/auth.js";
     else document.body.style.paddingBottom = "0px";
   }
 
-  // -------------------- MOBILE SPOTLIGHT --------------------
-
-  function initMobileSpotlight(mountEl) {
-    const bottomNav = mountEl.querySelector(".navbar-bottom nav");
-    if (!bottomNav) return;
-
-    let spot = bottomNav.querySelector(".nav-spotlight");
-    if (!spot) {
-      spot = document.createElement("span");
-      spot.className = "nav-spotlight";
-      bottomNav.prepend(spot);
-    }
-    bottomNav.classList.add("has-spotlight");
-    bottomNav.__spotIndex = null;
-
-    requestAnimationFrame(() => syncMobileSpotlight(mountEl, { instant: true }));
-
-    bottomNav.addEventListener("click", async (e) => {
-      if (window.innerWidth > 600) return;
-
-      const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
-
-      // ✅ When modal is open, clicking a nav link should CLOSE modal then animate (except HOME = instant)
-      if (isModalOpen) {
-        const link = e.target.closest("a[href]");
-        if (!link) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        const href = link.getAttribute("href") || "";
-        if (!href || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("#")) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        forceCloseSigninModal();
-        await window.__bannerSetAuthModalActive?.(false);
-
-        const targetPath = normalizePath(href);
-        if (targetPath === "/index.html") {
-          window.location.href = href;
-          return;
-        }
-
-        // ✅ IMPORTANT: capture FROM before changing actives
-        bottomNav.__spotIndex = findIndex(getMobileTargets(bottomNav), getActiveMobileTarget(bottomNav));
-
-        bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
-        link.classList.add("active");
-
-        await animateSpotlightTo(bottomNav, bottomNav.querySelector(".nav-spotlight"), link);
-        window.location.href = href;
-        return;
-      }
-
-      // auth slot click -> auth.js opens modal; banner handles open
-      if (e.target.closest("#mobileAuthBtn")) return;
-
-      const link = e.target.closest("a[href]");
-      if (!link) return;
-
-      const href = link.getAttribute("href") || "";
-      if (!href || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("#")) return;
-
-      const current = normalizePath(window.location.pathname);
-      const targetPath = normalizePath(href);
-      const targetIndex = targetPath.endsWith("/") ? targetPath + "index.html" : targetPath;
-
-      const isSame =
-        current === targetPath ||
-        current === targetIndex ||
-        (targetPath.endsWith("/") && current.startsWith(targetPath));
-
-      if (isSame) return;
-
-      e.preventDefault();
-
-      // ✅ IMPORTANT: capture FROM before changing actives (fixes account -> anywhere missing animation)
-      bottomNav.__spotIndex = findIndex(getMobileTargets(bottomNav), getActiveMobileTarget(bottomNav));
-
-      bottomNav.querySelectorAll("a.active").forEach((a) => a.classList.remove("active"));
-      link.classList.add("active");
-
-      await animateSpotlightTo(bottomNav, bottomNav.querySelector(".nav-spotlight"), link);
-      window.location.href = href;
-    });
-  }
-
-  function getMobileTargets(bottomNav) {
-    const links = Array.from(bottomNav.querySelectorAll("a"));
-    const authSlot = bottomNav.querySelector("#mobileAuthBtn button") || bottomNav.querySelector("#mobileAuthBtn");
-    return authSlot ? [...links, authSlot] : links;
-  }
-
-  function findIndex(targets, el) {
-    return targets.findIndex((t) => t === el || t.contains(el));
-  }
-
-  function getActiveMobileTarget(bottomNav) {
-    return (
-      bottomNav.querySelector("a.active") ||
-      bottomNav.querySelector("#mobileAuthBtn button.active") ||
-      bottomNav.querySelector("#mobileAuthBtn.active") ||
-      bottomNav.querySelector("a")
-    );
-  }
-
-  async function ensureSpotHasSize(spot) {
-    for (let i = 0; i < 3; i++) {
-      if (spot && spot.offsetWidth > 0 && spot.offsetHeight > 0) return;
-      await new Promise((r) => requestAnimationFrame(r));
-    }
-    if (!spot) return;
-    if (spot.offsetWidth === 0) spot.style.width = "52px";
-    if (spot.offsetHeight === 0) spot.style.height = "52px";
-    await new Promise((r) => requestAnimationFrame(r));
-  }
-
-  function xForTarget(navEl, spot, targetEl) {
-    const navRect = navEl.getBoundingClientRect();
-    const tRect = targetEl.getBoundingClientRect();
-    const centerX = (tRect.left - navRect.left) + tRect.width / 2;
-    return centerX - spot.offsetWidth / 2;
-  }
-
-  async function animateSpotlightTo(navEl, spot, targetEl) {
-    if (!navEl || !spot || !targetEl) return;
-
-    const targets = getMobileTargets(navEl);
-    if (!targets.length) return;
-
-    await ensureSpotHasSize(spot);
-
-    let from = navEl.__spotIndex;
-    if (from == null || from < 0) {
-      from = findIndex(targets, getActiveMobileTarget(navEl));
-      if (from < 0) from = 0;
-    }
-
-    const to = findIndex(targets, targetEl);
-    if (to < 0) return;
-
-    const x0 = xForTarget(navEl, spot, targets[from]);
-    spot.style.transition = "none";
-    spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
-    await new Promise((r) => requestAnimationFrame(r));
-
-    const dir = to > from ? 1 : -1;
-    const path = [from];
-    for (let i = from; i !== to; i += dir) path.push(i + dir);
-
-    const frames = path.map((idx) => {
-      const x = xForTarget(navEl, spot, targets[idx]);
-      return { transform: `translate3d(${x}px, -50%, 0)` };
-    });
-
-    const hops = Math.max(1, path.length - 1);
-    const duration = Math.min(520, 160 + hops * 80);
-
-    const anim = spot.animate(frames, {
-      duration,
-      easing: "cubic-bezier(.2,.9,.2,1)",
-      fill: "forwards",
-    });
-
-    await anim.finished.catch(() => {});
-    navEl.__spotIndex = to;
-  }
-
-  function syncMobileSpotlight(mountEl, { instant = false } = {}) {
-    const bottomNav = mountEl.querySelector(".navbar-bottom nav");
-    const spot = bottomNav?.querySelector(".nav-spotlight");
-    if (!bottomNav || !spot) return;
-
-    const targets = getMobileTargets(bottomNav);
-    if (!targets.length) return;
-
-    const active = getActiveMobileTarget(bottomNav);
-    const idx = Math.max(0, findIndex(targets, active));
-    bottomNav.__spotIndex = idx;
-
-    requestAnimationFrame(async () => {
-      await ensureSpotHasSize(spot);
-      const x = xForTarget(bottomNav, spot, targets[idx]);
-
-      if (instant) {
-        spot.style.transition = "none";
-        spot.style.transform = `translate3d(${x}px, -50%, 0)`;
-        requestAnimationFrame(() => (spot.style.transition = ""));
-      } else {
-        spot.style.transform = `translate3d(${x}px, -50%, 0)`;
-      }
-    });
-  }
-
-  // -------------------- DESKTOP SPOTLIGHT --------------------
-
-  function initDesktopSpotlight(mountEl) {
-    const topNav = mountEl.querySelector(".navbar nav");
-    if (!topNav) return;
-
-    let spot = topNav.querySelector(".nav-spotlight");
-    if (!spot) {
-      spot = document.createElement("span");
-      spot.className = "nav-spotlight";
-      topNav.prepend(spot);
-    }
-    topNav.classList.add("has-spotlight");
-    topNav.__spotIndex = null;
-
-    // ✅ When modal open: click link => close modal, then (HOME instant, else animate to link)
-    topNav.addEventListener(
-      "click",
-      async (e) => {
-        if (window.innerWidth <= 600) return;
-
-        const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
-        if (!isModalOpen) return;
-
-        const link = e.target.closest("a[href]");
-        if (!link) return;
-
-        const href = link.getAttribute("href") || "";
-        if (!href || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("#")) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation?.();
-
-        forceCloseSigninModal();
-        await window.__bannerSetAuthModalActive?.(false);
-
-        const targetPath = normalizePath(href);
-        if (targetPath === "/index.html") {
-          window.location.href = href;
-          return;
-        }
-
-        // ✅ IMPORTANT: capture FROM before changing actives
-        topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
-
-        mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
-        link.classList.add("active");
-
-        await animateDesktopSpotlightTo(topNav, topNav.querySelector(".nav-spotlight"), link);
-        window.location.href = href;
-      },
-      true
-    );
-
-    // CAPTURE interceptor for auth button (account anims)
-    topNav.addEventListener(
-      "click",
-      async (e) => {
-        if (window.innerWidth <= 600) return;
-        const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
-        if (isModalOpen) return;
-
-        const inAuth = e.target.closest("#authArea");
-        if (!inAuth) return;
-
-        const loginBtn = topNav.querySelector("#authArea #authLoginBtn");
-        const accountBtn = topNav.querySelector("#authArea #authAccountBtn");
-
-        // logged out -> let auth.js open modal
-        if (loginBtn && !accountBtn) return;
-
-        // logged in -> we own the navigation
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation?.();
-
-        // ✅ IMPORTANT: capture FROM before changing actives
-        topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
-
-        mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
-        accountBtn?.classList.add("active");
-
-        // do NOT animate from home
-        if (isHomePath()) {
-          window.location.href = "/account/";
-          return;
-        }
-
-        await animateDesktopSpotlightTo(topNav, topNav.querySelector(".nav-spotlight"), accountBtn);
-        window.location.href = "/account/";
-      },
-      true
-    );
-
-    requestAnimationFrame(() => syncDesktopSpotlight(mountEl, { instant: true }));
-
-    topNav.addEventListener("click", async (e) => {
-      if (window.innerWidth <= 600) return;
-
-      const isModalOpen = mountEl.__authModalOpen || document.body.classList.contains("modal-open");
-      if (isModalOpen) return;
-
-      // logo click -> always instant
-      const logoA = e.target.closest(".logo a");
-      if (logoA) {
-        const href = logoA.getAttribute("href") || "/";
-        e.preventDefault();
-        window.location.href = href;
-        return;
-      }
-
-      const link = e.target.closest("a[href]");
-      if (!link) return;
-
-      const href = link.getAttribute("href") || "";
-      if (!href || href.startsWith("http") || href.startsWith("mailto:") || href.startsWith("#")) return;
-
-      const current = normalizePath(window.location.pathname);
-      const targetPath = normalizePath(href);
-      const targetIndex = targetPath.endsWith("/") ? targetPath + "index.html" : targetPath;
-
-      const isSame =
-        current === targetPath ||
-        current === targetIndex ||
-        (targetPath.endsWith("/") && current.startsWith(targetPath));
-
-      if (isSame) return;
-
-      // leave HOME to other pages is instant (your existing rule)
-      if (isHomePath() && targetPath !== "/index.html") {
-        e.preventDefault();
-        window.location.href = href;
-        return;
-      }
-
-      // no animation TO HOME
-      if (targetPath === "/index.html") {
-        e.preventDefault();
-        window.location.href = href;
-        return;
-      }
-
-      e.preventDefault();
-
-      // ✅ IMPORTANT: capture FROM before changing actives
-      topNav.__spotIndex = findIndex(getDesktopTargets(topNav, mountEl), getActiveDesktopTarget(topNav, mountEl));
-
-      mountEl.querySelectorAll(".navbar nav a.active, .logo a.active").forEach((x) => x.classList.remove("active"));
-      link.classList.add("active");
-
-      await animateDesktopSpotlightTo(topNav, topNav.querySelector(".nav-spotlight"), link);
-      window.location.href = href;
-    });
-  }
-
-  function getDesktopTargets(topNav, mountEl) {
-    const logoA = mountEl.querySelector(".navbar .logo a");
-    const links = Array.from(topNav.querySelectorAll("a"));
-    const authBtn =
-      topNav.querySelector("#authArea #authAccountBtn") || topNav.querySelector("#authArea #authLoginBtn");
-
-    const out = [];
-    if (logoA) out.push(logoA);
-    out.push(...links);
-    if (authBtn) out.push(authBtn);
-    return out;
-  }
-
-  function getActiveDesktopTarget(topNav, mountEl) {
-    if (isAccountPath()) {
-      return (
-        topNav.querySelector("#authArea #authAccountBtn") ||
-        topNav.querySelector("#authArea #authLoginBtn") ||
-        topNav.querySelector("a") ||
-        mountEl.querySelector(".navbar .logo a")
-      );
-    }
-
-    const logoA = mountEl.querySelector(".navbar .logo a");
-    if (logoA && logoA.classList.contains("active")) return logoA;
-
-    const aActive = topNav.querySelector("a.active");
-    if (aActive) return aActive;
-
-    const authActive =
-      topNav.querySelector("#authArea #authLoginBtn.active") ||
-      topNav.querySelector("#authArea #authAccountBtn.active");
-    if (authActive) return authActive;
-
-    if (logoA && isHomePath()) return logoA;
-
-    return topNav.querySelector("a") || logoA || null;
-  }
-
-  function clamp(v, lo, hi) {
-    return Math.max(lo, Math.min(hi, v));
-  }
-
   function sizeDesktopSpotForTarget(spot, targetEl) {
     if (!spot || !targetEl) return;
 
@@ -691,22 +524,22 @@ import { initAuthButton } from "/shared/auth.js";
     const isAuth = targetEl.id === "authLoginBtn" || targetEl.id === "authAccountBtn";
     const r = targetEl.getBoundingClientRect();
 
-    let w, h;
+    let w;
+    let h;
 
     if (isLogo) {
       w = 30;
       h = 30;
-      spot.style.background = "rgba(212,175,55,0.08)";
-      spot.style.borderColor = "rgba(212,175,55,0.14)";
+      spot.style.background = "rgba(212, 175, 55, 0.08)";
+      spot.style.borderColor = "rgba(212, 175, 55, 0.14)";
     } else {
-      spot.style.background = "rgba(212,175,55,0.34)";
-      spot.style.borderColor = "rgba(212,175,55,0.45)";
-
+      spot.style.background = "rgba(212, 175, 55, 0.30)";
+      spot.style.borderColor = "rgba(212, 175, 55, 0.40)";
       if (isAuth) {
-        w = clamp(r.width + 18, 52, 140);
+        w = Math.max(52, Math.min(150, r.width + 18));
         h = 40;
       } else {
-        w = clamp(r.width + 22, 58, 170);
+        w = Math.max(58, Math.min(170, r.width + 22));
         h = 38;
       }
     }
@@ -717,65 +550,273 @@ import { initAuthButton } from "/shared/auth.js";
   }
 
   async function ensureDesktopSpotReady(spot, targetEl) {
-    await new Promise((r) => requestAnimationFrame(r));
+    await settleLayout();
     sizeDesktopSpotForTarget(spot, targetEl);
-    await new Promise((r) => requestAnimationFrame(r));
+    await settleLayout();
     if (spot.offsetWidth === 0) spot.style.width = "80px";
     if (spot.offsetHeight === 0) spot.style.height = "38px";
+  }
+
+  async function ensureMobileSpotReady(spot) {
+    for (let i = 0; i < 3; i++) {
+      if (spot && spot.offsetWidth > 0 && spot.offsetHeight > 0) return;
+      await waitFrame();
+    }
+    if (!spot) return;
+    if (spot.offsetWidth === 0) spot.style.width = "52px";
+    if (spot.offsetHeight === 0) spot.style.height = "52px";
+    await waitFrame();
   }
 
   function xForDesktopTarget(topNav, spot, targetEl) {
     const navRect = topNav.getBoundingClientRect();
     const tRect = targetEl.getBoundingClientRect();
-    const centerX = (tRect.left - navRect.left) + tRect.width / 2;
-    return centerX - spot.offsetWidth / 2;
+    return (tRect.left - navRect.left) + (tRect.width / 2) - (spot.offsetWidth / 2);
   }
 
-  async function animateDesktopSpotlightTo(topNav, spot, targetEl) {
+  function xForMobileTarget(bottomNav, spot, targetEl) {
+    const navRect = bottomNav.getBoundingClientRect();
+    const tRect = targetEl.getBoundingClientRect();
+    return (tRect.left - navRect.left) + (tRect.width / 2) - (spot.offsetWidth / 2);
+  }
+
+  function initDesktopSpotlight() {
+    const topNav = getTopNav();
+    if (!topNav) return;
+
+    let spot = topNav.querySelector(".nav-spotlight");
+    if (!spot) {
+      spot = document.createElement("span");
+      spot.className = "nav-spotlight";
+      topNav.prepend(spot);
+    }
+
+    topNav.classList.add("has-spotlight");
+    topNav.__spotIndex = null;
+
+    requestAnimationFrame(() => syncDesktopSpotlight({ instant: true }));
+
+    topNav.addEventListener("click", async (e) => {
+      if (isMobileView()) return;
+
+      const authRoot = e.target.closest("#authArea");
+      if (!authRoot) return;
+
+      if (!lockNav()) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+        return;
+      }
+
+      try {
+        if (isAuthOverlayOpen()) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
+          return;
+        }
+
+        const user = getAuthUser();
+        const prev = getCurrentDesktopTarget();
+        const authTarget = getDesktopAuthTarget();
+        if (!authTarget) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+
+        clearAllActives();
+        setAuthActive(true);
+        await settleLayout();
+
+        if (!user) {
+          mount.__savedDesktopHref = targetHref(prev);
+          mount.__savedMobileHref = targetHref(getCurrentMobileTarget());
+          mount.__bannerOpenedAuth = true;
+
+          if (isHomePath()) {
+            hardSnapDesktopSpotlight();
+          } else {
+            topNav.__spotIndex = indexOfTarget(getDesktopTargets(), prev || authTarget);
+            await animateDesktopTo(authTarget);
+          }
+
+          if (typeof window.__authOpenSignin === "function") {
+            await window.__authOpenSignin();
+          }
+          return;
+        }
+
+        if (isHomePath()) {
+          hardSnapDesktopSpotlight();
+          window.location.href = "/account/";
+          return;
+        }
+
+        topNav.__spotIndex = indexOfTarget(getDesktopTargets(), prev || authTarget);
+        await animateDesktopTo(authTarget);
+        window.location.href = "/account/";
+      } finally {
+        unlockNav();
+      }
+    }, true);
+
+    topNav.addEventListener("click", async (e) => {
+      if (isMobileView()) return;
+
+      const logo = e.target.closest(".logo a");
+      const link = e.target.closest("a[href]");
+
+      if (!logo && !link) return;
+      if (link?.closest("#authArea")) return;
+
+      // Allow leaving auth overlay by clicking a real page link
+      if (isAuthOverlayOpen()) {
+        if (!lockNav()) {
+          e.preventDefault();
+          return;
+        }
+
+        try {
+          const href = logo
+            ? (logo.getAttribute("href") || "/")
+            : (link?.getAttribute("href") || "");
+
+          if (!logo && !isLocalNavHref(href)) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          if (logo || toComparable(href) === "/index.html" || isHomePath()) {
+            forceCloseAuthOverlays();
+            window.location.href = href;
+            return;
+          }
+
+          const targetEl = link;
+          if (!targetEl) return;
+
+          forceCloseAuthOverlays();
+
+          clearAllActives();
+          targetEl.classList.add("active");
+          await settleLayout();
+
+          topNav.__spotIndex = indexOfTarget(getDesktopTargets(), getDesktopAuthTarget() || targetEl);
+          await animateDesktopTo(targetEl);
+          window.location.href = href;
+        } finally {
+          unlockNav();
+        }
+        return;
+      }
+
+      if (!lockNav()) {
+        e.preventDefault();
+        return;
+      }
+
+      try {
+        if (logo) {
+          e.preventDefault();
+          hardSnapDesktopSpotlight();
+          window.location.href = logo.getAttribute("href") || "/";
+          return;
+        }
+
+        if (!link) return;
+
+        const href = link.getAttribute("href") || "";
+        if (!isLocalNavHref(href)) return;
+        const target = toComparable(href);
+        if (target === currentComparablePath()) return;
+
+        const prev = getCurrentDesktopTarget();
+
+        e.preventDefault();
+
+        if (isHomePath() || target === "/index.html") {
+          window.location.href = href;
+          return;
+        }
+
+        clearAllActives();
+        link.classList.add("active");
+        await settleLayout();
+
+        topNav.__spotIndex = indexOfTarget(getDesktopTargets(), prev || link);
+        await animateDesktopTo(link);
+        window.location.href = href;
+      } finally {
+        unlockNav();
+      }
+    });
+  }
+
+  async function animateDesktopTo(targetEl) {
+    const topNav = getTopNav();
+    const spot = getDesktopSpot();
     if (!topNav || !spot || !targetEl) return;
 
-    await ensureDesktopSpotReady(spot, targetEl);
-
-    const targets = getDesktopTargets(topNav, mount);
+    const targets = getDesktopTargets();
     if (!targets.length) return;
 
     let from = topNav.__spotIndex;
     if (from == null || from < 0) {
-      from = findIndex(targets, getActiveDesktopTarget(topNav, mount));
+      from = indexOfTarget(targets, getCurrentDesktopTarget() || targetEl);
       if (from < 0) from = 0;
     }
 
-    const to = findIndex(targets, targetEl);
+    const to = indexOfTarget(targets, targetEl);
     if (to < 0) return;
 
+    await ensureDesktopSpotReady(spot, targets[from]);
     sizeDesktopSpotForTarget(spot, targets[from]);
-    const x0 = xForDesktopTarget(topNav, spot, targets[from]);
+    await settleLayout();
 
+    const x0 = xForDesktopTarget(topNav, spot, targets[from]);
     spot.style.transition = "none";
     spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
-    await new Promise((r) => requestAnimationFrame(r));
+    await waitFrame();
 
+    await ensureDesktopSpotReady(spot, targets[to]);
     sizeDesktopSpotForTarget(spot, targets[to]);
-    const x1 = xForDesktopTarget(topNav, spot, targets[to]);
+    await settleLayout();
 
+    const x1 = xForDesktopTarget(topNav, spot, targets[to]);
     spot.style.transition =
       "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)";
     spot.style.transform = `translate3d(${x1}px, -50%, 0)`;
 
     await new Promise((r) => setTimeout(r, 260));
+
+    await ensureDesktopSpotReady(spot, targets[to]);
+    sizeDesktopSpotForTarget(spot, targets[to]);
+    await settleLayout();
+
+    const x2 = xForDesktopTarget(topNav, spot, targets[to]);
+    spot.style.transition = "none";
+    spot.style.transform = `translate3d(${x2}px, -50%, 0)`;
+    await waitFrame();
+    spot.style.transition = "";
+
     topNav.__spotIndex = to;
   }
 
-  function syncDesktopSpotlight(mountEl, { instant = false } = {}) {
-    const topNav = mountEl.querySelector(".navbar nav");
-    const spot = topNav?.querySelector(".nav-spotlight");
+  function syncDesktopSpotlight({ instant = false } = {}) {
+    const topNav = getTopNav();
+    const spot = getDesktopSpot();
     if (!topNav || !spot) return;
 
-    const targets = getDesktopTargets(topNav, mountEl);
+    const targets = getDesktopTargets();
     if (!targets.length) return;
 
-    const active = getActiveDesktopTarget(topNav, mountEl);
-    const idx = Math.max(0, findIndex(targets, active));
+    let active;
+    if (isAuthOverlayOpen()) active = getDesktopAuthTarget();
+    else active = getCurrentDesktopTarget();
+
+    const idx = Math.max(0, indexOfTarget(targets, active || targets[0]));
     topNav.__spotIndex = idx;
 
     requestAnimationFrame(async () => {
@@ -785,6 +826,9 @@ import { initAuthButton } from "/shared/auth.js";
       if (instant) {
         spot.style.transition = "none";
         spot.style.transform = `translate3d(${x}px, -50%, 0)`;
+        requestAnimationFrame(() => {
+          spot.style.transition = "";
+        });
       } else {
         spot.style.transition =
           "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)";
@@ -793,13 +837,260 @@ import { initAuthButton } from "/shared/auth.js";
     });
   }
 
-  function forceCloseSigninModal() {
-    const el = document.getElementById("id01");
-    if (el) el.style.display = "none";
+  function hardSnapDesktopSpotlight() {
+    const topNav = getTopNav();
+    const spot = getDesktopSpot();
+    if (!topNav || !spot) {
+      syncDesktopSpotlight({ instant: true });
+      return;
+    }
+
+    try {
+      spot.getAnimations?.().forEach((a) => a.cancel());
+    } catch {}
+
+    spot.style.transition = "none";
+    syncDesktopSpotlight({ instant: true });
+  }
+
+  function initMobileSpotlight() {
+    const bottomNav = getBottomNav();
+    if (!bottomNav) return;
+
+    let spot = bottomNav.querySelector(".nav-spotlight");
+    if (!spot) {
+      spot = document.createElement("span");
+      spot.className = "nav-spotlight";
+      bottomNav.prepend(spot);
+    }
+
+    bottomNav.classList.add("has-spotlight");
+    bottomNav.__spotIndex = null;
+
+    requestAnimationFrame(() => syncMobileSpotlight({ instant: true }));
+
+    bottomNav.addEventListener("click", async (e) => {
+      if (!isMobileView()) return;
+
+      if (performance.now() < mount.__ignoreMobileUntil) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+        return;
+      }
+
+      const authRoot = e.target.closest("#mobileAuthBtn");
+      const link = e.target.closest("a[href]");
+
+      if (isAuthOverlayOpen()) {
+        // Allow leaving auth overlay by tapping a real page link
+        if (!link) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
+          return;
+        }
+
+        const href = link.getAttribute("href") || "";
+        if (!isLocalNavHref(href)) return;
+
+        if (!lockNav()) {
+          e.preventDefault();
+          return;
+        }
+
+        try {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
+
+          forceCloseAuthOverlays();
+
+          clearAllActives();
+          link.classList.add("active");
+          await settleLayout();
+
+          bottomNav.__spotIndex = indexOfTarget(getMobileTargets(), getMobileAuthTarget() || link);
+          await animateMobileTo(link);
+          window.location.href = href;
+        } finally {
+          unlockNav();
+        }
+        return;
+      }
+
+      if (authRoot) {
+        if (!lockNav()) {
+          e.preventDefault();
+          return;
+        }
+
+        try {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
+
+          const authTarget = getMobileAuthTarget();
+          if (!authTarget) return;
+
+          const prev = getCurrentMobileTarget();
+
+          clearAllActives();
+          setAuthActive(true);
+          await settleLayout();
+
+          const user = getAuthUser();
+
+          if (!user) {
+            mount.__savedDesktopHref = targetHref(getCurrentDesktopTarget());
+            mount.__savedMobileHref = targetHref(prev);
+            mount.__bannerOpenedAuth = true;
+          }
+
+          bottomNav.__spotIndex = indexOfTarget(getMobileTargets(), prev || authTarget);
+          await animateMobileTo(authTarget);
+
+          if (user) {
+            window.location.href = "/account/";
+          } else if (typeof window.__authOpenSignin === "function") {
+            await window.__authOpenSignin();
+          }
+        } finally {
+          unlockNav();
+        }
+        return;
+      }
+
+      if (!link) return;
+
+      const href = link.getAttribute("href") || "";
+      if (!isLocalNavHref(href)) return;
+
+      const target = toComparable(href);
+      if (target === currentComparablePath()) return;
+
+      if (!lockNav()) {
+        e.preventDefault();
+        return;
+      }
+
+      try {
+        const prev = getCurrentMobileTarget();
+
+        e.preventDefault();
+
+        clearAllActives();
+        link.classList.add("active");
+        await settleLayout();
+
+        bottomNav.__spotIndex = indexOfTarget(getMobileTargets(), prev || link);
+        await animateMobileTo(link);
+        window.location.href = href;
+      } finally {
+        unlockNav();
+      }
+    }, true);
+  }
+
+  async function animateMobileTo(targetEl) {
+    const bottomNav = getBottomNav();
+    const spot = getMobileSpot();
+    if (!bottomNav || !spot || !targetEl) return;
+
+    const targets = getMobileTargets();
+    if (!targets.length) return;
+
+    await ensureMobileSpotReady(spot);
+
+    let from = bottomNav.__spotIndex;
+    if (from == null || from < 0) {
+      from = indexOfTarget(targets, getCurrentMobileTarget() || targetEl);
+      if (from < 0) from = 0;
+    }
+
+    const to = indexOfTarget(targets, targetEl);
+    if (to < 0) return;
+
+    const x0 = xForMobileTarget(bottomNav, spot, targets[from]);
+    spot.style.transition = "none";
+    spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
+    await waitFrame();
+
+    const dir = to > from ? 1 : -1;
+    const path = [from];
+    for (let i = from; i !== to; i += dir) path.push(i + dir);
+
+    const frames = path.map((idx) => {
+      const x = xForMobileTarget(bottomNav, spot, targets[idx]);
+      return { transform: `translate3d(${x}px, -50%, 0)` };
+    });
+
+    const hops = Math.max(1, path.length - 1);
+    const duration = Math.min(520, 160 + (hops * 80));
+
+    const anim = spot.animate(frames, {
+      duration,
+      easing: "cubic-bezier(.2,.9,.2,1)",
+      fill: "forwards",
+    });
+
+    await anim.finished.catch(() => {});
+
+    const x1 = xForMobileTarget(bottomNav, spot, targets[to]);
+    spot.style.transition = "none";
+    spot.style.transform = `translate3d(${x1}px, -50%, 0)`;
+
+    bottomNav.__spotIndex = to;
+  }
+
+  function syncMobileSpotlight({ instant = false } = {}) {
+    const bottomNav = getBottomNav();
+    const spot = getMobileSpot();
+    if (!bottomNav || !spot) return;
+
+    const targets = getMobileTargets();
+    if (!targets.length) return;
+
+    let active;
+    if (isAuthOverlayOpen()) active = getMobileAuthTarget();
+    else active = getCurrentMobileTarget();
+
+    const idx = Math.max(0, indexOfTarget(targets, active || targets[0]));
+    bottomNav.__spotIndex = idx;
+
+    requestAnimationFrame(async () => {
+      await ensureMobileSpotReady(spot);
+      const x = xForMobileTarget(bottomNav, spot, targets[idx]);
+
+      if (instant) {
+        spot.style.transition = "none";
+        spot.style.transform = `translate3d(${x}px, -50%, 0)`;
+      } else {
+        spot.style.transform = `translate3d(${x}px, -50%, 0)`;
+      }
+    });
+  }
+
+  function forceAuthActiveUI() {
+    clearAllActives();
+    setAuthActive(true);
+    syncMobileSpotlight({ instant: true });
+    syncDesktopSpotlight({ instant: true });
+  }
+
+  function forceCloseAuthOverlays() {
+    const signin = document.getElementById("id01");
+    if (signin) signin.style.display = "none";
+
+    const signup = document.getElementById("signupModal");
+    if (signup) signup.style.display = "none";
+
+    window.__authOverlayOpen = null;
+    window.__authModalOpen = false;
+    mount.__authModalOpen = false;
+
     document.body.classList.remove("modal-open");
     document.body.style.overflow = "";
-    mount.__authModalOpen = false;
-    window.__authModalOpen = false;
-    window.dispatchEvent(new Event("modal:close"));
+    document.documentElement.style.overflow = "";
   }
 })();

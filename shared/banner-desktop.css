@@ -7,8 +7,8 @@
   --tray-inset: 14px;
   --tray-top: 10px;
 
-  --tray-pad-y: 10px;
-  --tray-pad-x: 18px;
+  --tray-pad-y: 0px;
+  --tray-pad-x: 0px;
   --tray-radius: 999px;
 
   /* glass tint (works on white pages) */
@@ -20,7 +20,7 @@
   --strip-border: rgba(0,0,0,0.08);
 
   /* logo pill */
-  --home-pill-bg: rgba(255,255,255,0.66);
+  --home-pill-bg: rgba(255, 255, 255, 0.366);
   --home-pill-border: rgba(0,0,0,0.08);
 
   --gap: 22px;
@@ -77,7 +77,7 @@
   position: relative;
 
   /* (2) more space between links and pill edge */
-  padding: 6px 20px;
+  padding: 6px 12px;
 }
 
 /* kill page-level or old banner rules that cause double underline */
@@ -208,20 +208,7 @@
 /* =========================
    Home underline INSIDE white icon pill
 ========================= */
-.navbar .logo a::after{
-  content:"";
-  position:absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 6px;
-  height: 2px;
 
-  width: 0%;
-  margin: 0 auto;
-  background: var(--primary);
-  transition: width 220ms ease, background 220ms ease;
-  border-radius: 2px;
-}
 
 .navbar .logo a:hover::after{
   width: calc(100% - 16px);
@@ -321,10 +308,6 @@
   width: calc(100% - 8px);
   background: var(--hover-blue);
 }
-.auth-icon-btn.active::after{
-  width: calc(100% - 8px);
-  background: var(--active-blue);
-}
 
 /* Modal open => login looks active */
 body.modal-open #authArea #authLoginBtn{
@@ -400,8 +383,7 @@ body.modal-open #authArea #authLoginBtn::after{
   top: 50%;
   left: 0;
 
-  width: 56px;
-  height: 36px;
+
   border-radius: 999px;
 
   transform: translate3d(0, -50%, 0);

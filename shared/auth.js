@@ -83,17 +83,10 @@ function ensureAuthListener() {
 function setModalOpenState(isOpen) {
   window.__authModalOpen = !!isOpen;
 
-  // Let banner.js control "Login active" + spotlight during modal open/close
-  if (typeof window.__bannerSetAuthModalActive === "function") {
-    try {
-      window.__bannerSetAuthModalActive(!!isOpen);
-    } catch {}
-  }
-
+  // banner.js listens to these events and is the single source of truth
   document.body.classList.toggle("modal-open", isOpen);
   window.dispatchEvent(new Event(isOpen ? "modal:open" : "modal:close"));
 }
-
 async function ensureSigninInjected() {
   if (signinInjected) return;
 

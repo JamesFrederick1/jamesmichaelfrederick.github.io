@@ -34,6 +34,7 @@ function ensureCss() {
     document.head.appendChild(link);
   }
 }
+
 function resetUI() {
   setMsg("");
   const overlay = q("#su_successOverlay");
@@ -102,9 +103,6 @@ function passwordPolicy(pw, username, email) {
   return null;
 }
 
-function makeAvatarSeed(usernameLower) { return `u:${usernameLower}`; }
-function makeAvatarUrl(seed) { return `https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(seed)}`; }
-
 // Timeout wrapper so NOTHING can hang forever
 function withTimeout(promise, ms, label = "timeout") {
   let t;
@@ -148,24 +146,30 @@ export async function ensureSignupInjected() {
 
 export function openSignup() {
   if (!modalEl) return;
-  resetUI(); // <-- IMPORTANT
+
+  // ✅ tell banner "auth overlay is open" (treat signup like login)
+  window.__authOverlayOpen = "signup";
+  window.dispatchEvent(new Event("modal:open"));
+
+  resetUI();
   modalEl.style.display = "flex";
   document.body.style.overflow = "hidden";
   document.body.classList.add("modal-open");
-
   document.documentElement.style.overflow = "hidden";
-  
 }
-
 export function closeSignup() {
   if (!modalEl) return;
+
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
 
   modalEl.style.display = "none";
-  document.body.style.overflow = "";
   document.body.classList.remove("modal-open");
-  resetUI(); // <-- IMPORTANT
+  resetUI();
+
+  // ✅ tell banner "auth overlay closed"
+  window.__authOverlayOpen = null;
+  window.dispatchEvent(new Event("modal:close"));
 }
 
 function mapError(e) {
@@ -185,7 +189,6 @@ function mapError(e) {
 }
 
 async function writeProfileToFirestore(user, email, username) {
-  // Try each candidate databaseId with a hard timeout so we never hang.
   let lastErr = null;
 
   for (const dbId of FIRESTORE_DB_CANDIDATES) {
@@ -215,20 +218,17 @@ async function writeProfileToFirestore(user, email, username) {
       );
 
       console.warn("[signup.js] Firestore OK using databaseId:", dbId);
-      return; // success
+      return;
     } catch (e) {
       lastErr = e;
 
-      // Username taken should not try other dbs
       if (e?.message === "USERNAME_TAKEN") throw e;
 
-      // Try next dbId for these common "wrong databaseId" errors
       const m = String(e?.message || "");
       if (/does not exist/i.test(m) || e?.code === "not-found" || e?.code === "failed-precondition") {
         continue;
       }
 
-      // For permission-denied / timeout / other: stop and surface
       throw e;
     }
   }
@@ -291,8 +291,6 @@ function wireHandlers() {
     signupBtn.disabled = true;
 
     let cred = null;
-
-    // set flag BEFORE async work starts
     window.__signupInProgress = true;
 
     try {
@@ -327,7 +325,6 @@ function wireHandlers() {
         try { await deleteUser(cred.user); } catch {}
       }
     } finally {
-      // ALWAYS clear flag, even if something throws
       window.__signupInProgress = false;
 
       const overlay = q("#su_successOverlay");
@@ -338,6 +335,7 @@ function wireHandlers() {
       }
     }
   });
+
   wired = true;
 }
 
