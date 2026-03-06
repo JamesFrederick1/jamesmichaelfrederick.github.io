@@ -19,7 +19,6 @@ h1 {
   padding: 1.25rem;
   box-shadow: 0 4px 10px rgba(0,0,0,0.06);
   margin-bottom: 1rem;
-
 }
 
 .row {
@@ -34,12 +33,9 @@ h1 {
   border-radius: 14px;
   object-fit: cover;
   border: 2px solid rgba(0,0,0,0.08);
-  justify-content: center;
 }
 
-.meta .line {
-  margin: 6px 0;
-}
+.meta .line { margin: 6px 0; }
 
 .label {
   font-weight: 600;
@@ -70,48 +66,40 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  filter: brightness(0.92);
-}
+button:hover { filter: brightness(0.92); }
 
 button.secondary {
   background: #e9eef6;
   color: var(--primary);
 }
 
+/* =========================
+   Avatar grid (scroll box)
+========================= */
 .grid {
   margin-top: 12px;
+
+  /* 5 columns desktop, 4 columns mobile */
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+
+  /* scroll box */
+  max-height: 520px;       /* shows ~7–8 rows depending on tile size */
+  overflow-y: auto;
+  padding-right: 6px;      /* room for scrollbar */
 }
+
+/* nice scrollbar (optional) */
+.grid::-webkit-scrollbar { width: 10px; }
+.grid::-webkit-scrollbar-thumb {
+  background: rgba(13,94,175,0.20);
+  border-radius: 999px;
+}
+.grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 999px; }
 
 @media (max-width: 720px) {
-  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-.avatar-btn {
-  border: 2px solid transparent;
-  border-radius: 14px;
-  padding: 6px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.avatar-btn img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  object-fit: cover;
-  display: block;
-}
-
-.avatar-btn:hover {
-  border-color: rgba(13, 94, 175, 0.35);
-}
-
-.avatar-btn.selected {
-  border-color: var(--primary);
+  .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: 480px; }
 }
 
 .avatar-tile{
@@ -123,12 +111,12 @@ button.secondary {
 }
 
 .avatar-tile img{
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
   display: block;
 }
 
-.avatar-tile.selected{
-  border-color: var(--primary);
-}
+/* hover / selected */
+.avatar-tile:hover{ border-color: rgba(13, 94, 175, 0.35); }
+.avatar-tile.selected{ border-color: var(--primary); }
