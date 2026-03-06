@@ -8,7 +8,6 @@
   --bottom-icon: 28px;
   --spot: 52px;
 
-  /* tighter like desktop */
   --tray-pad-y: 0px;
   --tray-pad-x: 0px;
 
@@ -36,7 +35,6 @@
 
   padding: var(--tray-pad-y) var(--tray-pad-x) !important;
 
-  /* tray hugs the nav */
   height: calc(var(--spot) + (var(--tray-pad-y) * 2)) !important;
   border-radius: calc((var(--spot) + (var(--tray-pad-y) * 2)) / 2) !important;
 
@@ -82,7 +80,7 @@
   isolation: isolate !important;
   overflow: visible !important;
 
-  /* with no tray padding, give inner nav its own side breathing room */
+  /* you said this is perfect */
   padding: 0 0px !important;
   column-gap: 10px !important;
 }
@@ -96,10 +94,19 @@
   min-width: 0 !important;
   position: relative !important;
   z-index: 2 !important;
+
+  text-decoration: none !important;
+  border-bottom: 0 !important;
 }
 
 .navbar-bottom .auth-area{
   margin-left: 0 !important;
+}
+
+#mobileAuthBtn,
+#mobileAuthBtn button{
+  text-decoration: none !important;
+  border-bottom: 0 !important;
 }
 
 #mobileAuthBtn button{
@@ -117,6 +124,16 @@
   align-items: center !important;
 
   -webkit-tap-highlight-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+#mobileAuthBtn button::after,
+#mobileAuthBtn::after,
+.navbar-bottom nav > a::after,
+.navbar-bottom a::after{
+  content: none !important;
+  display: none !important;
 }
 
 .navbar-bottom nav img.nav-icon,
@@ -128,12 +145,37 @@
   object-fit: contain !important;
 }
 
-/* kill desktop underline leftovers */
-.navbar-bottom a.active{
+/* absolutely no underline anywhere on mobile banner */
+.navbar-bottom a,
+.navbar-bottom a:hover,
+.navbar-bottom a:focus,
+.navbar-bottom a:active,
+.navbar-bottom a.active,
+.navbar-bottom .auth-area,
+#mobileAuthBtn,
+#mobileAuthBtn button{
+  text-decoration: none !important;
   border-bottom: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
-.navbar-bottom a.active::after{
+
+.navbar-bottom a::before,
+.navbar-bottom a::after,
+.navbar-bottom a.active::before,
+.navbar-bottom a.active::after,
+.navbar-bottom a:hover::before,
+.navbar-bottom a:hover::after,
+#mobileAuthBtn::before,
+#mobileAuthBtn::after,
+#mobileAuthBtn button::before,
+#mobileAuthBtn button::after,
+#mobileAuthBtn button.active::before,
+#mobileAuthBtn button.active::after,
+#mobileAuthBtn.active::before,
+#mobileAuthBtn.active::after{
   content: none !important;
+  display: none !important;
 }
 
 /* =========================
@@ -168,24 +210,6 @@
   transition: none !important;
 }
 
-/* kill all old fallback bubbles */
-.navbar-bottom nav.has-spotlight a.active::before,
-.navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before,
-.navbar-bottom a::before,
-.navbar-bottom a.active::before,
-#mobileAuthBtn::before,
-#mobileAuthBtn button::before,
-#mobileAuthBtn button.active::before,
-#mobileAuthBtn.active::before{
-  content: none !important;
-}
-
-/* tap feel */
-.navbar-bottom a:active img,
-#mobileAuthBtn button:active img{
-  transform: scale(0.96);
-}
-
 @keyframes homeTrayIn{
   to{
     opacity: 1;
@@ -196,4 +220,11 @@
 body.modal-open .navbar-bottom,
 body.modal-open .navbar{
   pointer-events: none;
+}
+
+.navbar-bottom.liquid-glass{
+
+
+  backdrop-filter: blur(5px);
+
 }
