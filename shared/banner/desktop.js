@@ -26,6 +26,23 @@ import {
   settleLayout,
 } from "/shared/banner/utils.js";
 
+/* =========================
+   Quick desktop spotlight config
+========================= */
+const DESKTOP_SPOT = {
+  HIDE_ON_HOME: true,
+  TRANSITION:
+    "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)",
+  AUTH_WIDTH_PAD: 18,
+  LINK_WIDTH_PAD: 22,
+  AUTH_MIN_W: 52,
+  AUTH_MAX_W: 150,
+  LINK_MIN_W: 58,
+  LINK_MAX_W: 170,
+  AUTH_H: 40,
+  LINK_H: 38,
+};
+
 export function initDesktopSpotlight(state) {
   const topNav = getTopNav(state);
   if (!topNav) return;
@@ -42,72 +59,80 @@ export function initDesktopSpotlight(state) {
 
   requestAnimationFrame(() => syncDesktopSpotlight(state, { instant: true }));
 
-  topNav.addEventListener("click", async (e) => {
-    if (isMobileView()) return;
+  // auth click
+  topNav.addEventListener(
+    "click",
+    async (e) => {
+      if (isMobileView()) return;
 
-    const authRoot = e.target.closest("#authArea");
-    if (!authRoot) return;
+      const authRoot = e.target.closest("#authArea");
+      if (!authRoot) return;
 
-    if (!lockNav(state)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      return;
-    }
-
-    try {
-      if (isAuthOverlayOpen(state)) {
+      if (!lockNav(state)) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation?.();
         return;
       }
 
-      const user = getAuthUser();
-      const prev = getCurrentDesktopTarget(state);
-      const authTarget = getDesktopAuthTarget(state);
-      if (!authTarget) return;
+      try {
+        if (isAuthOverlayOpen(state)) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation?.();
+          return;
+        }
 
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
+        const user = getAuthUser();
+        const prev = getCurrentDesktopTarget(state);
+        const authTarget = getDesktopAuthTarget(state);
+        if (!authTarget) return;
 
-      clearAllActives(state);
-      setAuthActive(state, true);
-      await settleLayout();
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
 
-      if (!user) {
-        state.savedDesktopHref = targetHref(prev);
-        state.savedMobileHref = targetHref(getCurrentMobileTarget(state));
-        state.bannerOpenedAuth = true;
+        clearAllActives(state);
+        setAuthActive(state, true);
+        await settleLayout();
 
-        if (isHomePath()) {
+        // signed out -> open signin
+        if (!user) {
+          state.savedDesktopHref = targetHref(prev);
+          state.savedMobileHref = targetHref(getCurrentMobileTarget(state));
+          state.bannerOpenedAuth = true;
+
+          if (isHomePath() && DESKTOP_SPOT.HIDE_ON_HOME) {
+            hardSnapDesktopSpotlight(state);
+          } else {
+            topNav.__spotIndex = indexOfTarget(getDesktopTargets(state), prev || authTarget);
+            await animateDesktopTo(state, authTarget);
+          }
+
+          if (typeof window.__authOpenSignin === "function") {
+            await window.__authOpenSignin();
+          }
+          return;
+        }
+
+        // signed in -> account
+        if (isHomePath() && DESKTOP_SPOT.HIDE_ON_HOME) {
           hardSnapDesktopSpotlight(state);
-        } else {
-          topNav.__spotIndex = indexOfTarget(getDesktopTargets(state), prev || authTarget);
-          await animateDesktopTo(state, authTarget);
+          window.location.href = "/account/";
+          return;
         }
 
-        if (typeof window.__authOpenSignin === "function") {
-          await window.__authOpenSignin();
-        }
-        return;
-      }
-
-      if (isHomePath()) {
-        hardSnapDesktopSpotlight(state);
+        topNav.__spotIndex = indexOfTarget(getDesktopTargets(state), prev || authTarget);
+        await animateDesktopTo(state, authTarget);
         window.location.href = "/account/";
-        return;
+      } finally {
+        unlockNav(state);
       }
+    },
+    true
+  );
 
-      topNav.__spotIndex = indexOfTarget(getDesktopTargets(state), prev || authTarget);
-      await animateDesktopTo(state, authTarget);
-      window.location.href = "/account/";
-    } finally {
-      unlockNav(state);
-    }
-  }, true);
-
+  // page/logo clicks
   topNav.addEventListener("click", async (e) => {
     if (isMobileView()) return;
 
@@ -117,6 +142,7 @@ export function initDesktopSpotlight(state) {
     if (!logo && !link) return;
     if (link?.closest("#authArea")) return;
 
+    // allow leaving auth overlay by clicking a real target
     if (isAuthOverlayOpen(state)) {
       if (!lockNav(state)) {
         e.preventDefault();
@@ -133,8 +159,10 @@ export function initDesktopSpotlight(state) {
         e.preventDefault();
         e.stopPropagation();
 
+        // any transition involving home/logo stays snap-only
         if (logo || toComparable(href) === "/index.html" || isHomePath()) {
           forceCloseAuthOverlays(state);
+          hardSnapDesktopSpotlight(state);
           window.location.href = href;
           return;
         }
@@ -148,7 +176,10 @@ export function initDesktopSpotlight(state) {
         targetEl.classList.add("active");
         await settleLayout();
 
-        topNav.__spotIndex = indexOfTarget(getDesktopTargets(state), getDesktopAuthTarget(state) || targetEl);
+        topNav.__spotIndex = indexOfTarget(
+          getDesktopTargets(state),
+          getDesktopAuthTarget(state) || targetEl
+        );
         await animateDesktopTo(state, targetEl);
         window.location.href = href;
       } finally {
@@ -163,6 +194,7 @@ export function initDesktopSpotlight(state) {
     }
 
     try {
+      // logo/home never uses spotlight
       if (logo) {
         e.preventDefault();
         hardSnapDesktopSpotlight(state);
@@ -182,7 +214,9 @@ export function initDesktopSpotlight(state) {
 
       e.preventDefault();
 
+      // any transition involving home is snap-only
       if (isHomePath() || target === "/index.html") {
+        hardSnapDesktopSpotlight(state);
         window.location.href = href;
         return;
       }
@@ -217,27 +251,27 @@ export async function animateDesktopTo(state, targetEl) {
   const to = indexOfTarget(targets, targetEl);
   if (to < 0) return;
 
-  await ensureDesktopSpotReady(state, spot, targets[from]);
+  await ensureDesktopSpotReady(spot, targets[from]);
   sizeDesktopSpotForTarget(spot, targets[from]);
   await settleLayout();
 
   const x0 = xForDesktopTarget(topNav, spot, targets[from]);
+  spot.style.opacity = "1";
   spot.style.transition = "none";
   spot.style.transform = `translate3d(${x0}px, -50%, 0)`;
   await waitFrame();
 
-  await ensureDesktopSpotReady(state, spot, targets[to]);
+  await ensureDesktopSpotReady(spot, targets[to]);
   sizeDesktopSpotForTarget(spot, targets[to]);
   await settleLayout();
 
   const x1 = xForDesktopTarget(topNav, spot, targets[to]);
-  spot.style.transition =
-    "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)";
+  spot.style.transition = DESKTOP_SPOT.TRANSITION;
   spot.style.transform = `translate3d(${x1}px, -50%, 0)`;
 
   await new Promise((r) => setTimeout(r, 260));
 
-  await ensureDesktopSpotReady(state, spot, targets[to]);
+  await ensureDesktopSpotReady(spot, targets[to]);
   sizeDesktopSpotForTarget(spot, targets[to]);
   await settleLayout();
 
@@ -255,8 +289,21 @@ export function syncDesktopSpotlight(state, { instant = false } = {}) {
   const spot = getDesktopSpot(state);
   if (!topNav || !spot) return;
 
+  // home: hide spotlight instead of nuking it
+  if (DESKTOP_SPOT.HIDE_ON_HOME && isHomePath() && !isAuthOverlayOpen(state)) {
+    topNav.__spotIndex = null;
+    spot.style.transition = "none";
+    spot.style.opacity = "0";
+    return;
+  }
+
   const targets = getDesktopTargets(state);
-  if (!targets.length) return;
+  if (!targets.length) {
+    spot.style.transition = "none";
+    spot.style.opacity = "0";
+    topNav.__spotIndex = null;
+    return;
+  }
 
   let active;
   if (isAuthOverlayOpen(state)) active = getDesktopAuthTarget(state);
@@ -266,8 +313,10 @@ export function syncDesktopSpotlight(state, { instant = false } = {}) {
   topNav.__spotIndex = idx;
 
   requestAnimationFrame(async () => {
-    await ensureDesktopSpotReady(state, spot, targets[idx]);
+    await ensureDesktopSpotReady(spot, targets[idx]);
     const x = xForDesktopTarget(topNav, spot, targets[idx]);
+
+    spot.style.opacity = "1";
 
     if (instant) {
       spot.style.transition = "none";
@@ -276,8 +325,7 @@ export function syncDesktopSpotlight(state, { instant = false } = {}) {
         spot.style.transition = "";
       });
     } else {
-      spot.style.transition =
-        "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)";
+      spot.style.transition = DESKTOP_SPOT.TRANSITION;
       spot.style.transform = `translate3d(${x}px, -50%, 0)`;
     }
   });
@@ -295,6 +343,14 @@ export function hardSnapDesktopSpotlight(state) {
     spot.getAnimations?.().forEach((a) => a.cancel());
   } catch {}
 
+  // home isolated = spotlight hidden
+  if (DESKTOP_SPOT.HIDE_ON_HOME) {
+    spot.style.transition = "none";
+    spot.style.opacity = "0";
+    topNav.__spotIndex = null;
+    return;
+  }
+
   spot.style.transition = "none";
   syncDesktopSpotlight(state, { instant: true });
 }
@@ -302,28 +358,27 @@ export function hardSnapDesktopSpotlight(state) {
 function sizeDesktopSpotForTarget(spot, targetEl) {
   if (!spot || !targetEl) return;
 
-  const isLogo = !!targetEl.closest?.(".logo");
   const isAuth = targetEl.id === "authLoginBtn" || targetEl.id === "authAccountBtn";
   const r = targetEl.getBoundingClientRect();
 
   let w;
   let h;
 
-  if (isLogo) {
-    w = 30;
-    h = 30;
-    spot.style.background = "rgba(212, 175, 55, 0.08)";
-    spot.style.borderColor = "rgba(212, 175, 55, 0.14)";
+  spot.style.background = "rgba(212, 175, 55, 0.30)";
+  spot.style.borderColor = "rgba(212, 175, 55, 0.40)";
+
+  if (isAuth) {
+    w = Math.max(
+      DESKTOP_SPOT.AUTH_MIN_W,
+      Math.min(DESKTOP_SPOT.AUTH_MAX_W, r.width + DESKTOP_SPOT.AUTH_WIDTH_PAD)
+    );
+    h = DESKTOP_SPOT.AUTH_H;
   } else {
-    spot.style.background = "rgba(212, 175, 55, 0.30)";
-    spot.style.borderColor = "rgba(212, 175, 55, 0.40)";
-    if (isAuth) {
-      w = Math.max(52, Math.min(150, r.width + 18));
-      h = 40;
-    } else {
-      w = Math.max(58, Math.min(170, r.width + 22));
-      h = 38;
-    }
+    w = Math.max(
+      DESKTOP_SPOT.LINK_MIN_W,
+      Math.min(DESKTOP_SPOT.LINK_MAX_W, r.width + DESKTOP_SPOT.LINK_WIDTH_PAD)
+    );
+    h = DESKTOP_SPOT.LINK_H;
   }
 
   spot.style.width = `${w}px`;
@@ -331,7 +386,7 @@ function sizeDesktopSpotForTarget(spot, targetEl) {
   spot.style.borderRadius = "999px";
 }
 
-async function ensureDesktopSpotReady(state, spot, targetEl) {
+async function ensureDesktopSpotReady(spot, targetEl) {
   await settleLayout();
   sizeDesktopSpotForTarget(spot, targetEl);
   await settleLayout();
