@@ -205,11 +205,6 @@
   border-bottom: 0 !important;
 }
 
-.navbar nav a.active::after{
-  width: 100%;
-  background: var(--active-blue);
-}
-
 /* =========================
    Home underline INSIDE white icon pill
 ========================= */
