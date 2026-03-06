@@ -383,3 +383,52 @@ body.modal-open #authArea #authLoginBtn::after{
 .auth-btn{
   text-shadow: 0 1px 0 rgba(255,255,255,0.25);
 }
+
+
+
+
+
+
+/***********************
+  Desktop GOLD spotlight
+************************/
+
+/* create a stacking context so bubble sits under links */
+.navbar nav{
+  position: relative;
+  isolation: isolate;
+}
+
+/* the moving bubble */
+.navbar nav .nav-spotlight{
+  position: absolute;
+  top: 50%;
+  left: 0;
+
+  width: 56px;
+  height: 36px;
+  border-radius: 999px;
+
+  transform: translate3d(0, -50%, 0);
+  pointer-events: none;
+
+  /* behind links, above glass */
+  z-index: 0;
+
+  background: rgba(212, 175, 55, 0.30);
+  border: 1px solid rgba(212, 175, 55, 0.40);
+
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.16);
+}
+
+/* keep links above bubble */
+.navbar nav a,
+.navbar nav .auth-area{
+  position: relative;
+  z-index: 1;
+}
