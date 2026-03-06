@@ -2,59 +2,58 @@
 
 /* =========================
    Mobile-only banner + spotlight
-   (single source of truth — no duplicates)
 ========================= */
 
 :root{
-  /* sizing */
-  --bottom-icon: 28px;     /* icon size */
-  --spot: 52px;            /* spotlight size */
-  --tray-pad-y: 8px;       /* tray hugs spotlight */
-  --tray-pad-x: 12px;
+  --bottom-icon: 28px;
+  --spot: 52px;
 
-  /* layout */
-  --tray-inset: 12px;      /* screen edge inset */
-  --tray-bottom: 6px;      /* bottom offset (before safe-area) */
+  /* tighter like desktop */
+  --tray-pad-y: 0px;
+  --tray-pad-x: 0px;
+
+  --tray-inset: 12px;
+  --tray-bottom: 6px;
 }
 
 /* hide top navbar on mobile */
-.navbar{ display: none !important; }
+.navbar{
+  display: none !important;
+}
 
 /* =========================
-   Bottom tray (molded pill)
+   Bottom tray
 ========================= */
 .navbar-bottom{
   display: block !important;
 
   position: fixed !important;
   left: 50% !important;
-
-  /* IMPORTANT: translateX only (your JS moves spotlight, not tray) */
   transform: translateX(-50%) !important;
 
   width: calc(100% - var(--tray-inset)) !important;
-
-  /* safe-area fix so it never clips on iPhone */
   bottom: calc(var(--tray-bottom) + env(safe-area-inset-bottom, 0px)) !important;
 
   padding: var(--tray-pad-y) var(--tray-pad-x) !important;
 
-  /* molded around spotlight */
+  /* tray hugs the nav */
   height: calc(var(--spot) + (var(--tray-pad-y) * 2)) !important;
   border-radius: calc((var(--spot) + (var(--tray-pad-y) * 2)) / 2) !important;
 
-  /* let liquid-glass render the frosted sheet */
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-
   overflow: visible !important;
 
-  /* keep it above hero/overlay/widgets */
   z-index: 9999 !important;
 }
 
-/* stronger grey tint on the glass sheet ONLY for this tray */
+/* blurrier tray glass */
+.navbar-bottom.liquid-glass{
+  --glass-blur: 26px;
+  --glass-bright: 1.05;
+}
+
 .navbar-bottom.liquid-glass::before{
   background: rgba(235, 235, 240, 0.58) !important;
   border: 1px solid rgba(0,0,0,0.10) !important;
@@ -69,7 +68,7 @@
 }
 
 /* =========================
-   6 buttons layout
+   6 button layout
 ========================= */
 .navbar-bottom nav{
   width: 100% !important;
@@ -77,19 +76,17 @@
 
   display: grid !important;
   grid-template-columns: repeat(6, 1fr) !important;
-
   align-items: center !important;
 
   position: relative !important;
   isolation: isolate !important;
-
   overflow: visible !important;
 
-  /* makes it feel like a button group (space from tray edges) */
+  /* with no tray padding, give inner nav its own side breathing room */
+  padding: 0 0px !important;
   column-gap: 10px !important;
 }
 
-/* each slot centered */
 .navbar-bottom nav > a,
 .navbar-bottom nav > span.auth-area{
   display: flex !important;
@@ -98,15 +95,13 @@
 
   min-width: 0 !important;
   position: relative !important;
-
-  /* icons above spotlight */
   z-index: 2 !important;
 }
 
-/* remove desktop auth spacing on mobile */
-.navbar-bottom .auth-area{ margin-left: 0 !important; }
+.navbar-bottom .auth-area{
+  margin-left: 0 !important;
+}
 
-/* normalize auth button box */
 #mobileAuthBtn button{
   appearance: none !important;
   -webkit-appearance: none !important;
@@ -124,7 +119,6 @@
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* icons */
 .navbar-bottom nav img.nav-icon,
 .navbar-bottom nav a img,
 .navbar-bottom nav span img{
@@ -134,7 +128,7 @@
   object-fit: contain !important;
 }
 
-/* kill underline/border active styles on mobile links */
+/* kill desktop underline leftovers */
 .navbar-bottom a.active{
   border-bottom: 0 !important;
 }
@@ -143,7 +137,7 @@
 }
 
 /* =========================
-   Spotlight bubble (single moving element)
+   Spotlight bubble
 ========================= */
 .navbar-bottom .nav-spotlight{
   position: absolute !important;
@@ -157,11 +151,8 @@
   transform: translate3d(0, -50%, 0);
   will-change: transform !important;
   pointer-events: none !important;
-
-  /* behind icons, above tray glass */
   z-index: 1 !important;
 
-  /* GOLD spotlight */
   background: rgba(212, 175, 55, 0.34) !important;
   border: 1px solid rgba(212, 175, 55, 0.45) !important;
 
@@ -173,12 +164,19 @@
     inset 0 1px 0 rgba(255,255,255,0.18),
     inset 0 -10px 18px rgba(212,175,55,0.12) !important;
 
-  transition: transform 240ms cubic-bezier(.22,.9,.18,1) !important;
+  animation: none !important;
+  transition: none !important;
 }
 
-/* disable fallback bubbles if any old rules exist */
+/* kill all old fallback bubbles */
 .navbar-bottom nav.has-spotlight a.active::before,
-.navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before{
+.navbar-bottom nav.has-spotlight #mobileAuthBtn button.active::before,
+.navbar-bottom a::before,
+.navbar-bottom a.active::before,
+#mobileAuthBtn::before,
+#mobileAuthBtn button::before,
+#mobileAuthBtn button.active::before,
+#mobileAuthBtn.active::before{
   content: none !important;
 }
 
@@ -188,10 +186,6 @@
   transform: scale(0.96);
 }
 
-/* =========================
-   Home-only: tray slides up (no clipping)
-========================= */
-
 @keyframes homeTrayIn{
   to{
     opacity: 1;
@@ -199,30 +193,7 @@
   }
 }
 
-/* ===== HARD-KILL ANY OLD PER-ITEM BUBBLES (END) ===== */
-.navbar-bottom a::before,
-.navbar-bottom a.active::before,
-#mobileAuthBtn::before,
-#mobileAuthBtn button::before,
-#mobileAuthBtn button.active::before{
-  content: none !important;
-}
-
-/* ===== HARD KILL: old spotlight / fallback animations (put at END) ===== */
-
-/* Never allow CSS to animate the spotlight (JS controls it) */
-.navbar-bottom .nav-spotlight{
-  animation: none !important;
-  transition: none !important;
-}
-
-/* Kill any leftover fallback bubbles everywhere */
-.navbar-bottom a.active::before,
-#mobileAuthBtn button.active::before,
-#mobileAuthBtn.active::before{
-  content: none !important;
-}
 body.modal-open .navbar-bottom,
-body.modal-open .navbar {
+body.modal-open .navbar{
   pointer-events: none;
 }
