@@ -8,8 +8,6 @@
   top: 0;
   left: 0;
   width: 100%;
-  background: var(--white);
-  border-bottom: 1px solid #ccc;
 
   display: flex;
   justify-content: space-between;

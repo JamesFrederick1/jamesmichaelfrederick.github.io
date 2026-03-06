@@ -14,12 +14,12 @@ import { auth, firestore, FIRESTORE_DB_CANDIDATES } from "/shared/firebase.js";
 import { ensureSignupInjected, openSignup } from "/shared/signup.js";
 
 /**
- * ICON / AVATAR RULES (your requested behavior):
+ * ICON / AVATAR RULES:
  * - Logged OUT:
  *    - mobile:  /files/signedout-mobile.svg
  *    - desktop: "Login" text (no icon)
  * - Logged IN:
- *    - if Firestore has avatarUrl or avatarSeed -> use that (dicebear-pfp)
+ *    - if Firestore has avatarUrl or avatarSeed -> use that (dicebear)
  *    - else:
  *        - mobile:  /files/signedin-mobile.svg
  *        - desktop: /files/signedin-desktop.svg
@@ -29,7 +29,6 @@ const ASSETS = {
   signedOutMobile: "/files/signedout-mobile.svg",
   signedInMobile: "/files/signedin-mobile.svg",
   signedInDesktop: "/files/signedin-desktop.svg",
-
   eye: "/files/eye.svg",
   eyeOff: "/files/eye-off.svg",
 };
@@ -44,18 +43,12 @@ window.__authUser = null;
 window.__authGetUser = () => window.__authUser;
 
 window.__authModalOpen = window.__authModalOpen || false;
-
-// prevents initial wrong render flash
 window.__authReady = window.__authReady || false;
-
-// used elsewhere (signup)
 window.__signupInProgress = window.__signupInProgress || false;
 
-// avatar cache
 window.__avatarCache = window.__avatarCache || new Map();
 const AVATAR_LS_PREFIX = "avatarUrl:";
 
-// mounts (desktop + mobile) so one listener updates all
 window.__authMounts = window.__authMounts || [];
 window.__authGlobalListenerAttached = window.__authGlobalListenerAttached || false;
 
@@ -78,13 +71,23 @@ function ensureAuthListener() {
   });
 }
 
+/**
+ * IMPORTANT:
+ * Do NOT run any “old” modal listeners that manipulate nav actives or spotlight.
+ * banner.js is now the single source of truth for:
+ * - clearing actives during modal-open
+ * - setting login active
+ * - moving spotlight to auth slot
+ * - restoring actives on close
+ */
 function setModalOpenState(isOpen) {
   window.__authModalOpen = !!isOpen;
 
-  // IMPORTANT: let banner.js take over "Login active" + spotlight sync on mobile
-  // This is what fixes: "login doesn't activate as active on mobile"
+  // Let banner.js control "Login active" + spotlight during modal open/close
   if (typeof window.__bannerSetAuthModalActive === "function") {
-    try { window.__bannerSetAuthModalActive(!!isOpen); } catch {}
+    try {
+      window.__bannerSetAuthModalActive(!!isOpen);
+    } catch {}
   }
 
   document.body.classList.toggle("modal-open", isOpen);
@@ -148,6 +151,7 @@ function closeSignin({ clear = true } = {}) {
   if (clear) clearSigninInputs();
 }
 
+// Expose opener for banner.js
 window.__authOpenSignin = async function () {
   await ensureSigninInjected();
   openSignin();
@@ -192,25 +196,10 @@ function isOnAccountPage() {
   return p === "/account/" || p === "/account/index.html" || p.startsWith("/account/");
 }
 
-// Active behavior you built:
-// - while modal-open: login is active
-// - while logged-in AND on /account/: account icon active
 function computeAuthShouldBeActive(authState /* "out"|"in" */) {
   if (window.__authModalOpen) return true;
   if (authState === "in" && isOnAccountPage()) return true;
   return false;
-}
-
-function clearPageActiveTabs() {
-  document.querySelectorAll(".navbar nav a.active, .navbar-bottom nav a.active").forEach((a) => {
-    a.classList.remove("active");
-  });
-  const logo = document.querySelector(".navbar .logo a.active");
-  if (logo) logo.classList.remove("active");
-}
-
-function restorePageActiveTabs() {
-  if (typeof window.__bannerApplyActiveNav === "function") window.__bannerApplyActiveNav();
 }
 
 // ---------- Avatar cache ----------
@@ -247,10 +236,6 @@ function setStoredAvatar(uid, url) {
   } catch {}
 }
 
-/**
- * Reads avatarUrl/avatarSeed from Firestore (dicebear-pfp).
- * Returns "" if not found or inaccessible.
- */
 async function resolveDicebearAvatarUrl(user) {
   const mem = window.__avatarCache.get(user.uid);
   if (mem && !isPlaceholderIconUrl(mem)) return mem;
@@ -285,7 +270,7 @@ async function resolveDicebearAvatarUrl(user) {
           return url;
         }
       }
-      break; // DB exists; doc missing => stop trying candidates
+      break;
     } catch (e) {
       const msg = String(e?.message || "");
       if (/does not exist/i.test(msg) || e?.code === "not-found" || e?.code === "failed-precondition") continue;
@@ -318,7 +303,6 @@ function wireSigninHandlers() {
       e.preventDefault();
       e.stopPropagation();
       closeSignin({ clear: true });
-
       await ensureSignupInjected();
       openSignup();
     });
@@ -443,7 +427,7 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
   // hide until auth is ready to prevent wrong icon flash
   ui.btn.style.visibility = window.__authReady ? "visible" : "hidden";
 
-  // click routing
+  // click routing (desktop click is fine; mobile click is handled in banner.js for animation)
   if (!authAreaEl.dataset.authWired) {
     authAreaEl.addEventListener("click", (e) => {
       const state = authAreaEl.dataset.authState || "out";
@@ -549,6 +533,7 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
     window.addEventListener("auth:ready", onReady);
   }
 
+  // global listeners once (ONLY auth state)
   if (!window.__authGlobalListenerAttached) {
     window.__authGlobalListenerAttached = true;
 
@@ -558,28 +543,6 @@ export async function initAuthButton(authAreaEl, { variant = "desktop" } = {}) {
         if (window.__signupInProgress) m.renderLoggedOut();
         else if (user) m.renderLoggedIn(user);
         else m.renderLoggedOut();
-      }
-    });
-
-    window.addEventListener("modal:open", () => {
-      clearPageActiveTabs();
-      for (const m of window.__authMounts) m.__btn?.classList.add("active");
-    });
-
-    window.addEventListener("modal:close", () => {
-      restorePageActiveTabs();
-      for (const m of window.__authMounts) {
-        const container = m.__btn?.parentElement;
-        const st = container?.dataset?.authState || "out";
-        m.__btn?.classList.toggle("active", computeAuthShouldBeActive(st));
-      }
-    });
-
-    window.addEventListener("popstate", () => {
-      for (const m of window.__authMounts) {
-        const container = m.__btn?.parentElement;
-        const st = container?.dataset?.authState || "out";
-        m.__btn?.classList.toggle("active", computeAuthShouldBeActive(st));
       }
     });
   }

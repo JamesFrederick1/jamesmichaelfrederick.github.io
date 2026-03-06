@@ -86,3 +86,9 @@
   left: 20px;
   z-index: 10;
 }
+/* Home page: let hero background live behind the fixed navbar */
+body.home .hero{
+  margin-top: calc(-1 * var(--nav-h)); /* pull hero up under navbar */
+  height: 100vh;                       /* full viewport again */
+  padding-top: var(--nav-h);           /* keep content below navbar */
+}

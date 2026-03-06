@@ -263,3 +263,63 @@ body.modal-open .widgets{
   .hero__btn { max-width: 320px; width: 100%; }
   .widgets { bottom: 12px; left: 12px; }
 }
+
+
+/* hide the defs */
+.svg-filters{
+  position:absolute;
+  width:0;
+  height:0;
+  overflow:hidden;
+}
+
+/* ✅ CALL THIS on any element */
+.liquid-glass{
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+/* The “glass sheet” that gets frosted + warped */
+.liquid-glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: inherit;
+  pointer-events:none;
+
+  /* glass tint */
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+
+  /* frosted */
+  backdrop-filter: brightness(1.1) blur(12px);
+  -webkit-backdrop-filter: brightness(1.1) blur(12px);
+
+  /* liquid warp driven by files/gradient.png (RG channels) */
+  filter: url(#liquidGlass);
+}
+
+/* optional: depth */
+.liquid-glass{
+  filter: drop-shadow(-8px -10px 46px #0000005f);
+}
+
+/* For navbars: keep underlines/shadows from getting clipped */
+.glass-no-clip{
+  overflow: visible !important;
+}
+.glass-no-clip::before{
+  border-radius: inherit;
+}
+
+/* ===== NAV GLASS SAFETY (END OF base.css) ===== */
+.navbar.liquid-glass,
+.navbar-bottom.liquid-glass{
+  overflow: visible !important;        /* don't clip spotlight/underlines */
+}
+
+.navbar.liquid-glass::before,
+.navbar-bottom.liquid-glass::before{
+  border-radius: inherit;
+}
