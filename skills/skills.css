@@ -1,8 +1,14 @@
-
-.skills-section {
-    padding: 120px 20px 60px;
+/* ===== Skills page: match banner offset like Contact ===== */
+.skills-section{
+  padding: calc(var(--nav-h) + 24px) 16px 40px !important;
 }
 
+/* (optional) keep only this active style — your `nav a.active` is too broad */
+.navbar nav a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+}
 .container {
     max-width: 900px;
     margin: 0 auto;

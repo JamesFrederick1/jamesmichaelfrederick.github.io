@@ -301,3 +301,306 @@ body.modal-open #authArea #authLoginBtn::after{
   margin-left: 0 !important; /* prevents 12px + 12px = 24px gap */
 }
 
+/* /shared/banner-desktop.css */
+
+/* =========================
+   Top Navbar (desktop)
+========================= */
+.navbar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0.8rem 2rem;
+  z-index: 10;
+}
+
+.navbar .logo a{
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.4rem;
+  position: relative;
+}
+
+.navbar nav a{
+  margin: 0 12px;
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 500;
+  position: relative;
+}
+
+.navbar nav a:hover,
+.navbar .logo a:hover{
+  color: #083b73;
+}
+
+.navbar nav a::after,
+.navbar .logo a::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+
+.navbar nav a:hover::after,
+.navbar .logo a:hover::after{
+  width: 100%;
+}
+
+/* Desktop active styles (blue) */
+.navbar nav a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+  color: #2F80ED;
+}
+.navbar nav a.active::after{ width: 0 !important; }
+.navbar nav a.active:hover{ color: #2F80ED; }
+
+.navbar .logo a.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  pointer-events: none;
+  color: #2F80ED;
+}
+.navbar .logo a.active::after{ width: 0 !important; }
+.navbar .logo a.active:hover{ color: #2F80ED; }
+
+/* =========================
+   Auth mounts (desktop)
+========================= */
+.auth-area{
+  display: inline-flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+/* Login text button */
+.auth-btn{
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+
+  color: var(--primary);
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+
+  cursor: pointer;
+  position: relative;
+}
+
+.auth-btn:hover{ color: #083b73; }
+
+.auth-btn::after{
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+.auth-btn:hover::after{ width: 100%; }
+
+/* Icon button (account avatar) */
+.auth-icon-btn{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 34px;
+  width: 34px;
+  border-radius: 10px;
+
+  position: relative;
+}
+
+/* IMPORTANT: no pseudo underline for icon buttons (prevents “underline through svg”) */
+
+.auth-icon-btn:focus,
+.auth-icon-btn:focus-visible{
+  outline: none;
+  box-shadow: none;
+}
+
+/* Desktop auth active styles */
+.navbar .auth-btn.active{
+  font-weight: bold;
+  border-bottom: 2px solid;
+  color: #2F80ED;
+}
+.navbar .auth-btn.active::after{ width: 0 !important; }
+
+.navbar .auth-icon-btn.active{
+  box-shadow: inset 0 -2px 0 #2F80ED;
+}
+
+/* Stop weird click animation line */
+.navbar .auth-btn:active::after{ width: 0 !important; }
+
+/* Hide mobile bar on desktop (in case markup exists) */
+.navbar-bottom{ display: none; }
+
+/* ===== Desktop: Account icon gets a REAL underline (flat) ===== */
+.navbar .auth-icon-btn{
+  border-radius: 10px;     /* keep your button round */
+  padding-bottom: 8px;     /* room for underline */
+}
+
+.navbar .auth-icon-btn.active{
+  box-shadow: none !important; /* kill the "rounded border" look */
+}
+
+.navbar .auth-icon-btn.active::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;             /* sits in padding gutter */
+  height: 2px;
+  background: #2F80ED;     /* active blue */
+  border-radius: 0 !important; /* FLAT line */
+}
+
+/* ===== Desktop: kill the black line / focus flash on click ===== */
+.navbar .auth-btn,
+.navbar .auth-icon-btn{
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navbar .auth-btn:focus,
+.navbar .auth-btn:focus-visible,
+.navbar .auth-icon-btn:focus,
+.navbar .auth-icon-btn:focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* stop underline animation on click/keyboard focus */
+.navbar .auth-btn:active::after,
+.navbar .auth-btn:focus-visible::after{
+  width: 0 !important;
+}
+
+/* Desktop: make Login active underline visible + consistent */
+.navbar .auth-btn.active{
+  color: #2F80ED;
+  border-bottom: 2px solid #2F80ED;
+  padding-bottom: 2px; /* gives the underline room */
+}
+
+/* don’t run the hover underline animation while active */
+.navbar .auth-btn.active::after{
+  width: 0 !important;
+}
+
+/* Desktop: when login modal is open, make Login look active */
+body.modal-open #authArea #authLoginBtn{
+  color: #2F80ED !important;
+  border-bottom: 2px solid #2F80ED !important;
+  padding-bottom: 2px;
+}
+
+/* stop hover underline animation while modal-open */
+body.modal-open #authArea #authLoginBtn::after{
+  width: 0 !important;
+}
+
+/* Desktop: show Login as active when modal is open */
+body.modal-open #authArea #authLoginBtn{
+  color: #2F80ED !important;
+  border-bottom: 2px solid #2F80ED !important;
+  padding-bottom: 2px;
+}
+
+/* stop hover underline animation while modal-open */
+body.modal-open #authArea #authLoginBtn::after{
+  width: 0 !important;
+}
+
+/* Kill click/focus underline flash on desktop login */
+#authArea #authLoginBtn:active,
+#authArea #authLoginBtn:focus,
+#authArea #authLoginBtn:focus-visible{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Force the animated underline off during click/focus (prevents black sweep) */
+#authArea #authLoginBtn:active::after,
+#authArea #authLoginBtn:focus::after,
+#authArea #authLoginBtn:focus-visible::after{
+  width: 0 !important;
+  background: transparent !important;
+}
+/* FORCE account underline when auth account button is active */
+#authArea #authAccountBtn.active::after{
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 2px !important;
+  height: 2px !important;
+  background: #2F80ED !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+}
+
+/* Ensure no box-shadow overrides the underline look */
+#authArea #authAccountBtn.active{
+  box-shadow: none !important;
+}
+
+/* Desktop: allow hover underline for account icon (auth-icon-btn) */
+.navbar #authArea .auth-icon-btn{
+  padding-bottom: 8px;         /* room for underline */
+}
+
+.navbar #authArea .auth-icon-btn::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;                 /* sits in the padding gutter */
+  height: 2px;
+  background: var(--primary);
+  width: 0%;
+  transition: width 0.3s;
+  border-radius: 0;            /* flat underline */
+}
+
+.navbar #authArea .auth-icon-btn:hover::after{
+  width: 100%;
+}
+
+/* Keep active underline BLUE (your existing rule should already do this, but this locks it in) */
+.navbar #authArea #authAccountBtn.active::after{
+  background: #2F80ED !important;
+  width: 100% !important;
+}
+
+/* ===== Fix: remove double-gap between last <a> and authArea (desktop) ===== */
+.navbar nav .auth-area{
+  margin-left: 0 !important; /* prevents 12px + 12px = 24px gap */
+}
+
