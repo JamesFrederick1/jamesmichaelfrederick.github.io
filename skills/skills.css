@@ -1,6 +1,7 @@
 /* ===== Skills page layout ===== */
 body{
   padding-top: 0 !important;
+
 }
 
 .skills-section{
@@ -20,6 +21,8 @@ h1{
   color: var(--primary);
   font-size: 2.5rem;
   margin-bottom: 2rem;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  text-align: center;
 }
 
 .category{
@@ -37,6 +40,7 @@ ul{
   padding-left: 1.5rem;
   font-size: 1.05rem;
   line-height: 1.8;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 html,

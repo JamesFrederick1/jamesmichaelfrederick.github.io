@@ -177,7 +177,6 @@
   function buildSlide(src, index) {
     const slide = document.createElement("div");
     slide.className = "slideshow__slide";
-    slide.style.setProperty("--slide-image", `url("${src}")`);
 
     const bg = document.createElement("div");
     bg.className = "slideshow__bg";

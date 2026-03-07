@@ -1,37 +1,78 @@
 /* /about/slideshow.css */
 
 /* =========================================================
-   MAIN CONTROLS
+   DESKTOP CONTROLS
    ========================================================= */
 :root {
+  /* frame */
   --about-slideshow-height: 470px;
-  --about-slideshow-radius: 0px;
-  --about-slideshow-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  --about-slideshow-width: 80vw;
+  --about-slideshow-radius: 100px;
+  --about-slideshow-shadow: 10px 6px 40px 30px #000000;
   --about-slideshow-top-gap: 0px;
 
+  /* layout */
   --about-card-max-width: 820px;
   --about-card-top: 32px;
   --about-card-side-pad: 20px;
 
-  --about-dot-size: 10px;
-  --about-dot-gap: 8px;
-  --about-dot-bottom: 14px;
-
+  /* slide motion */
   --about-slide-ms: 380ms;
 
-  /* desktop crop/stretch mode: fill | cover | contain */
+  /* image fit / tone */
   --about-desktop-fit: cover;
+  --about-desktop-image-filter: contrast(103%) opacity(100%) saturate(105%) brightness(98%);
 
-  /* desktop whole-page blur background */
-  --about-page-blur: 32px;
-  --about-page-blur-scale: 1.1;
-  --about-page-blur-opacity: 0.9;
-  --about-page-blur-brightness: 0.9;
+  /* whole-page desktop blur */
+  --about-page-blur: 4px;
+  --about-page-blur-scale: 1.10;
+  --about-page-blur-opacity: 0.90;
+  --about-page-blur-brightness: 0.90;
+
+  /* dots */
+  --about-dot-size: 15px;
+  --about-dot-gap: 8px;
+  --about-dot-bottom: -45px;
+  --about-dot-pad-y: 8px;
+  --about-dot-pad-x: 10px;
+  --about-dot-bg: rgba(255, 255, 255, 0.10);
+  --about-dot-border: rgba(255, 255, 255, 0.22);
+  --about-dot-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --about-dot-hover: #D4AF37;
+  --about-dot-active: #0d5eaf;
+  --about-dot-idle: white;
+
+  /* desktop glass border */
+  --about-glass-border-width: 1.5px;
+  --about-glass-border-color: rgba(255, 255, 255, 0.30);
+  --about-glass-border-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --about-glass-border-shadow-inner-top: rgba(255, 255, 255, 0.30);
+  --about-glass-border-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
+
+  /* desktop sheen on main border */
+  --about-glass-sheen-inset: 1px;
+  --about-glass-sheen-top: rgba(255, 255, 255, 0.16);
+  --about-glass-sheen-mid: rgba(255, 255, 255, 0.07);
+  --about-glass-sheen-low: rgba(255, 255, 255, 0.02);
+  --about-glass-sheen-stop-1: 0%;
+  --about-glass-sheen-stop-2: 14%;
+  --about-glass-sheen-stop-3: 24%;
+  --about-glass-sheen-stop-4: 42%;
+
+  /* desktop glass pill */
+  --about-pill-enabled: 1;
+  --about-pill-inset-y: 10px;
+  --about-pill-inset-x: 30px;
+  --about-pill-radius: 300px;
+  --about-pill-border-width: 1px;
+  --about-pill-border-color: rgba(255, 255, 255, 0.26);
+  --about-pill-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --about-pill-shadow-inner-top: rgba(255, 255, 255, 0.30);
+  --about-pill-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
 }
 
 /* =========================================================
    WHOLE PAGE DESKTOP BLUR BACKGROUND
-   Desktop only. Mobile file stays untouched.
    ========================================================= */
 @media (min-width: 601px) {
   .page-bg {
@@ -45,16 +86,13 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-
     background-image: var(--about-page-bg-image);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-
     filter: blur(var(--about-page-blur)) brightness(var(--about-page-blur-brightness));
     transform: scale(var(--about-page-blur-scale));
     opacity: var(--about-page-blur-opacity);
-
     will-change: background-image, transform, filter, opacity;
   }
 
@@ -86,31 +124,36 @@
   padding-inline: var(--about-card-side-pad);
 }
 
-/* slideshow mount */
 #aboutSlideshow {
   width: 100%;
 }
 
 /* =========================================================
-   SLIDESHOW BOX
+   SLIDESHOW OUTER FRAME
    ========================================================= */
 .slideshow {
   position: relative;
-  width: 100vw;
+  isolation: isolate;
+  width: var(--about-slideshow-width);
   height: var(--about-slideshow-height);
   left: 50%;
   transform: translateX(-50%);
-  overflow: hidden;
+  overflow: visible;
   border-radius: var(--about-slideshow-radius);
   box-shadow: var(--about-slideshow-shadow);
   outline: none;
-  background: #111;
+  background: transparent;
+  margin-top: -38px;
 }
 
+/* actual clipping layer */
 .slideshow__slides {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #111;
 }
 
 .slideshow__slide {
@@ -122,6 +165,8 @@
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .slideshow__slide.is-active {
@@ -151,6 +196,7 @@
   display: none;
 }
 
+/* image */
 .slideshow__img {
   width: 100%;
   height: 100%;
@@ -159,6 +205,66 @@
   object-position: center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+@media (min-width: 601px) {
+  .slideshow__img {
+    filter: var(--about-desktop-image-filter);
+  }
+}
+
+/* =========================================================
+   DESKTOP GLASS BORDER
+   ========================================================= */
+.slideshow__slides::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  border: var(--about-glass-border-width) solid var(--about-glass-border-color);
+  box-shadow:
+    inset 0 1px 0 var(--about-glass-border-shadow-inner-top),
+    inset 0 -1px 0 var(--about-glass-border-shadow-inner-bottom),
+    var(--about-glass-border-shadow-outer);
+}
+
+.slideshow__slides::after {
+  content: "";
+  position: absolute;
+  inset: var(--about-glass-sheen-inset);
+  z-index: 3;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    to bottom,
+    var(--about-glass-sheen-top) var(--about-glass-sheen-stop-1),
+    var(--about-glass-sheen-mid) var(--about-glass-sheen-stop-2),
+    var(--about-glass-sheen-low) var(--about-glass-sheen-stop-3),
+    rgba(255, 255, 255, 0) var(--about-glass-sheen-stop-4)
+  );
+}
+
+/* =========================================================
+   DESKTOP GLASS PILL
+   ========================================================= */
+@media (min-width: 601px) {
+  .slideshow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: var(--about-pill-inset-y) var(--about-pill-inset-x);
+    z-index: 4;
+    pointer-events: none;
+    border-radius: var(--about-pill-radius);
+    border: calc(var(--about-pill-enabled) * var(--about-pill-border-width)) solid var(--about-pill-border-color);
+    box-shadow:
+      inset 0 1px 0 var(--about-pill-shadow-inner-top),
+      inset 0 -1px 0 var(--about-pill-shadow-inner-bottom),
+      var(--about-pill-shadow-outer);
+    opacity: var(--about-pill-enabled);
+  }
 }
 
 /* =========================================================
@@ -171,12 +277,16 @@
   transform: translateX(-50%);
   display: flex;
   gap: var(--about-dot-gap);
-  z-index: 4;
-  padding: 8px 10px;
+  z-index: 5;
+  padding: var(--about-dot-pad-y) var(--about-dot-pad-x);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  background: var(--about-dot-bg);
+  border: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    var(--about-dot-shadow);
 }
 
 .slideshow__dot {
@@ -185,18 +295,18 @@
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--about-dot-idle);
   transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
 }
 
 .slideshow__dot:hover {
   transform: scale(1.08);
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--about-dot-hover);
 }
 
 .slideshow__dot.is-active {
-  background: #fff;
   transform: scale(1.14);
+  background: var(--about-dot-active);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -204,5 +314,58 @@
   .slideshow__dot,
   .page-bg::before {
     transition: none !important;
+  }
+}
+
+/* =========================================================
+   DESKTOP: sharp inside glass pill, tiny blur outside pill
+   append at bottom
+   ========================================================= */
+:root {
+  --about-pill-outside-blur: 2px;
+  --about-pill-outside-scale: 1.01;
+  --about-pill-sharp-fit: var(--about-desktop-fit);
+}
+
+@media (min-width: 601px) {
+  /* blurred base image */
+  .slideshow__slide .slideshow__img {
+    position: relative;
+    z-index: 1;
+    filter: blur(var(--about-pill-outside-blur));
+    transform: scale(var(--about-pill-outside-scale));
+  }
+
+  /* sharp image only inside desktop pill */
+  .slideshow__slide .slideshow__bg {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: var(--about-pill-sharp-fit);
+
+    clip-path: inset(
+      var(--about-pill-inset-y)
+      var(--about-pill-inset-x)
+      round var(--about-pill-radius)
+    );
+  }
+
+  /* keep glass border / glass pill above the images */
+  .slideshow__slides::before,
+  .slideshow__slides::after,
+  .slideshow::before {
+    z-index: 4;
+  }
+
+  .slideshow__dots {
+    z-index: 5;
   }
 }

@@ -4,10 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About Me</title>
-    <link rel="stylesheet" href="/shared/utils/ios-bubble.css" />
-    <script type="module" src="/shared/utils/ios-bubble.js"></script>
 
     <link rel="icon" href="../files/logo.ico" type="image/x-icon" />
+
+    <link rel="stylesheet" href="/shared/utils/ios-bubble.css" />
+    <script type="module" src="/shared/utils/ios-bubble.js"></script>
 
     <link rel="stylesheet" href="/shared/base.css" />
     <link rel="stylesheet" href="/shared/banner-desktop.css" />
@@ -27,7 +28,7 @@
     <div class="page">
       <main class="about">
         <section class="about__hero">
-          <div id="aboutSlideshow"></div>
+          <div id="aboutSlideshow" class="choose"></div>
         </section>
 
         <section class="about__content">
@@ -35,7 +36,6 @@
             <button
               class="about__close ios-bubble ios-bubble--dramatic ios-bubble--close liquid-glass"
               id="aboutCloseBtn"
-
               type="button"
               aria-label="Close About Me"
             >

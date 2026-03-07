@@ -1,7 +1,7 @@
 /* /about/slideshow-mobile.css */
 
 :root {
-  --about-slideshow-height-mobile: 100vh;
+  --about-slideshow-height-mobile: 110vh;
   --about-slideshow-mobile-side-gap: 0px;
   --about-slideshow-mobile-radius: 0px;
 
@@ -11,13 +11,51 @@
   /* mobile crop/stretch mode: fill | cover | contain */
   --about-mobile-fit: contain;
 
-  /* optional blurred background fill behind image */
-  --about-mobile-blur-enabled: 0;
-  --about-mobile-blur: 20px;
-  --about-mobile-blur-scale: 1.06;
-  --about-mobile-blur-opacity: 0.9;
+  /* blur layer 1: big atmosphere blur */
+  --about-mobile-bg-blur: 100px;
+  --about-mobile-bg-blur-scale: 1.18;
+  --about-mobile-bg-blur-opacity: 0.75;
+  --about-mobile-bg-blur-bleed: 80px;
 
-  --about-mobile-dot-top: 45.5rem;
+  /* blur layer 2: outside-pill slight blur */
+  --about-mobile-outside-pill-blur: 1px;
+  --about-mobile-outside-pill-scale: 1.01;
+
+  /* mobile dots */
+  --about-mobile-dot-top: 47.5rem;
+  --about-mobile-dot-bg: rgba(255, 255, 255, 0.08);
+  --about-mobile-dot-border: rgba(255, 255, 255, 0.20);
+  --about-mobile-dot-idle: white;
+  --about-mobile-dot-hover: #D4AF37;
+  --about-mobile-dot-active: #0d5eaf;
+
+  /* mobile glass border */
+  --about-mobile-glass-border-width: 1px;
+  --about-mobile-glass-border: rgba(255, 255, 255, 0.34);
+  --about-mobile-glass-shadow-outer: 0 4px 14px rgba(0, 0, 0, 0.12);
+  --about-mobile-glass-shadow-inner-top: rgba(255, 255, 255, 0.28);
+  --about-mobile-glass-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
+
+  /* mobile sheen controls */
+  --about-mobile-sheen-inset: 1px;
+  --about-mobile-glass-top: rgba(255, 255, 255, 0.18);
+  --about-mobile-glass-mid: rgba(255, 255, 255, 0.08);
+  --about-mobile-glass-low: rgba(255, 255, 255, 0.02);
+  --about-mobile-sheen-stop-1: 0%;
+  --about-mobile-sheen-stop-2: 16%;
+  --about-mobile-sheen-stop-3: 28%;
+  --about-mobile-sheen-stop-4: 46%;
+
+  /* mobile glass pill controls */
+  --about-mobile-pill-enabled: 1;
+  --about-mobile-pill-inset-y: 250px;
+  --about-mobile-pill-inset-x: 12px;
+  --about-mobile-pill-radius: 999px;
+  --about-mobile-pill-border-width: 1px;
+  --about-mobile-pill-border: rgba(255, 255, 255, 0.24);
+  --about-mobile-pill-shadow-outer: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --about-mobile-pill-shadow-inner-top: rgba(255, 255, 255, 0.24);
+  --about-mobile-pill-shadow-inner-bottom: rgba(255, 255, 255, 0.05);
 }
 
 /* mobile slideshow size */
@@ -29,19 +67,64 @@
   border-radius: var(--about-slideshow-mobile-radius);
 }
 
-/* mobile image fit mode */
+/* make the slide itself clip cleanly */
+.slideshow__slide {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* LAYER 1: huge soft blur behind everything */
+.slideshow__bg {
+  display: block;
+  position: absolute;
+  top: calc(-1 * var(--about-mobile-bg-blur-bleed));
+  right: calc(-1 * var(--about-mobile-bg-blur-bleed));
+  bottom: calc(-1 * var(--about-mobile-bg-blur-bleed));
+  left: calc(-1 * var(--about-mobile-bg-blur-bleed));
+  z-index: 0;
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(var(--about-mobile-bg-blur));
+  transform: scale(var(--about-mobile-bg-blur-scale));
+  opacity: var(--about-mobile-bg-blur-opacity);
+}
+
+/* LAYER 2: slightly blurred full image */
 .slideshow__img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: var(--about-mobile-fit);
   object-position: center;
+  filter: blur(var(--about-mobile-outside-pill-blur));
+  transform: scale(var(--about-mobile-outside-pill-scale));
 }
 
-/* optional blur fill values for mobile */
-.slideshow--blur-fill .slideshow__bg {
-  filter: blur(var(--about-mobile-blur));
-  transform: scale(var(--about-mobile-blur-scale));
-  opacity: var(--about-mobile-blur-opacity);
+/* LAYER 3: clear image only inside pill */
+@media (max-width: 600px) {
+  .slideshow__slide::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+
+    background-image: var(--slide-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: var(--about-mobile-fit);
+
+    clip-path: inset(
+      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-y))
+      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-x))
+      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-y))
+      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-x))
+      round var(--about-mobile-pill-radius)
+    );
+  }
 }
 
 /* mobile card spacing */
@@ -63,16 +146,67 @@
     padding: 1.25rem;
   }
 
-  /* move dots to top on mobile only */
+  /* mobile glass border */
+  .slideshow__slides::before {
+    border: var(--about-mobile-glass-border-width) solid var(--about-mobile-glass-border);
+    box-shadow:
+      inset 0 1px 0 var(--about-mobile-glass-shadow-inner-top),
+      inset 0 -1px 0 var(--about-mobile-glass-shadow-inner-bottom),
+      var(--about-mobile-glass-shadow-outer);
+  }
+
+  /* mobile sheen */
+  .slideshow__slides::after {
+    inset: var(--about-mobile-sheen-inset);
+    background: linear-gradient(
+      to bottom,
+      var(--about-mobile-glass-top) var(--about-mobile-sheen-stop-1),
+      var(--about-mobile-glass-mid) var(--about-mobile-sheen-stop-2),
+      var(--about-mobile-glass-low) var(--about-mobile-sheen-stop-3),
+      rgba(255, 255, 255, 0) var(--about-mobile-sheen-stop-4)
+    );
+  }
+
+  /* mobile glass pill */
+  .slideshow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: var(--about-mobile-pill-inset-y) var(--about-mobile-pill-inset-x);
+    z-index: 4;
+    pointer-events: none;
+    border-radius: var(--about-mobile-pill-radius);
+    border: calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-border-width)) solid var(--about-mobile-pill-border);
+    box-shadow:
+      inset 0 1px 0 var(--about-mobile-pill-shadow-inner-top),
+      inset 0 -1px 0 var(--about-mobile-pill-shadow-inner-bottom),
+      var(--about-mobile-pill-shadow-outer);
+    opacity: var(--about-mobile-pill-enabled);
+  }
+
+  /* mobile dots positioning + colors */
   .slideshow__dots {
     top: var(--about-mobile-dot-top);
     bottom: auto;
+    background: var(--about-mobile-dot-bg);
+    border: none;
+  }
+
+  .slideshow__dot {
+    background: var(--about-mobile-dot-idle);
+  }
+
+  .slideshow__dot:hover {
+    background: var(--about-mobile-dot-hover);
+  }
+
+  .slideshow__dot.is-active {
+    background: var(--about-mobile-dot-active);
   }
 }
-
-.slideshow--blur-fill .slideshow__bg {
-  display: block;
-  filter: blur(var(--about-mobile-blur));
-  transform: scale(var(--about-mobile-blur-scale));
-  opacity: var(--about-mobile-blur-opacity);
+.slideshow::before {
+  box-shadow:
+    inset 0 2px 0 var(--about-mobile-pill-shadow-inner-top),
+    inset 0 -4px 0 var(--about-mobile-pill-shadow-inner-bottom),
+    0 24px 40px rgba(0, 0, 0, 0.28);
 }

@@ -10,14 +10,15 @@
   width: min(100%, var(--about-card-max-width));
   margin: var(--about-card-top) auto 0;
   padding: 2rem;
-  margin-top: -450px;
+  margin-top: -423px;
 
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 
-  border-radius: 12px;
+  border-radius: 40px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  margin-bottom: 60px;
 }
 
 .about__card--closed {
@@ -108,10 +109,11 @@
   }
 
   .about__close {
-    top: 10px;
-    right: 10px;
+    top: 20px;
+    right: 20px;
     width: 34px;
     height: 34px;
     font-size: 1.4rem;
   }
 }
+

@@ -90,6 +90,7 @@ body{
 .research-section{
   min-height: 100vh;
   padding: calc(var(--nav-h) + 24px) 16px 40px !important;
-  background: #0D5EAF;
-    background: linear-gradient(170deg, rgba(13, 94, 175, 1) 0%, rgba(255, 255, 255, 1) 75%, rgba(212, 175, 55, 1) 100%);
+  
+background: #0D5EAF;
+background: linear-gradient(688deg, rgba(13, 94, 175, 1) 0%, rgba(255, 255, 255, 1) 75%, rgba(212, 175, 55, 1) 100%);
 }
