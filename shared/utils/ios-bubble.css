@@ -1,0 +1,120 @@
+/* /shared/utils/ios-bubble.css */
+
+/* simple, reliable CSS-only bubble press */
+.ios-bubble {
+  --ios-bubble-press-scale: 0.84;
+  --ios-bubble-pop-scale: 1.08;
+  --ios-bubble-bg: rgba(255, 255, 255, 0.16);
+  --ios-bubble-bg-pressed: rgba(255, 255, 255, 0.28);
+  --ios-bubble-border: rgba(255, 255, 255, 0.34);
+  --ios-bubble-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  --ios-bubble-shadow-pressed:
+    0 4px 10px rgba(0, 0, 0, 0.14),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22);
+  --ios-bubble-blur: 16px;
+
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid var(--ios-bubble-border);
+  background: var(--ios-bubble-bg);
+  box-shadow: var(--ios-bubble-shadow);
+
+  backdrop-filter: blur(var(--ios-bubble-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--ios-bubble-blur)) saturate(1.2);
+
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    transform 140ms cubic-bezier(.22, 1, .36, 1),
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+}
+
+/* soft glass shine */
+.ios-bubble::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      130% 90% at 20% 12%,
+      rgba(255,255,255,0.78) 0%,
+      rgba(255,255,255,0.22) 22%,
+      rgba(255,255,255,0.08) 42%,
+      rgba(255,255,255,0.00) 65%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.14),
+      rgba(255,255,255,0.03) 40%,
+      rgba(255,255,255,0) 100%
+    );
+  opacity: 0.95;
+}
+
+/* bubble bloom on tap */
+.ios-bubble::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    rgba(255,255,255,0.95) 0%,
+    rgba(255,255,255,0.45) 40%,
+    rgba(255,255,255,0.00) 72%
+  );
+}
+
+/* desktop hover */
+@media (hover: hover) and (pointer: fine) {
+  .ios-bubble:hover {
+    filter: brightness(1.04);
+  }
+}
+
+/* actual press state */
+.ios-bubble:active {
+  transform: scale(var(--ios-bubble-press-scale));
+  background: var(--ios-bubble-bg-pressed);
+  box-shadow: var(--ios-bubble-shadow-pressed);
+}
+
+/* bubble effect while pressed */
+.ios-bubble:active::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(5.5);
+  transition:
+    transform 220ms ease-out,
+    opacity 220ms ease-out;
+}
+
+/* optional stronger variant */
+.ios-bubble--strong {
+  --ios-bubble-press-scale: 0.78;
+  --ios-bubble-pop-scale: 1.12;
+  --ios-bubble-bg: rgba(255, 255, 255, 0.12);
+  --ios-bubble-bg-pressed: rgba(255, 255, 255, 0.34);
+  --ios-bubble-blur: 20px;
+}
+
+/* small round buttons like close */
+.ios-bubble--close {
+  --ios-bubble-press-scale: 0.76;
+}

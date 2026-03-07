@@ -4,16 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About Me</title>
+    <link rel="stylesheet" href="/shared/utils/ios-bubble.css" />
+    <script type="module" src="/shared/utils/ios-bubble.js"></script>
 
     <link rel="icon" href="../files/logo.ico" type="image/x-icon" />
 
     <link rel="stylesheet" href="/shared/base.css" />
-    <link rel="stylesheet" href="/shared/banner-desktop.css">
-    <link rel="stylesheet" href="/shared/banner-mobile.css" media="(max-width: 600px)">
+    <link rel="stylesheet" href="/shared/banner-desktop.css" />
+    <link rel="stylesheet" href="/shared/banner-mobile.css" media="(max-width: 600px)" />
     <link rel="stylesheet" href="/shared/auth.css" />
-
     <link rel="stylesheet" href="/about/about.css" />
+    <link rel="stylesheet" href="/about/slideshow.css" />
+    <link rel="stylesheet" href="/about/slideshow-mobile.css" media="(max-width: 600px)" />
+
     <script type="module" src="/shared/banner/banner.js"></script>
+    <script type="module" src="/about/slideshow.js"></script>
   </head>
 
   <body class="page-bg">
@@ -21,8 +26,22 @@
 
     <div class="page">
       <main class="about">
-        <section class="about__wrap">
-          <div class="about__card">
+        <section class="about__hero">
+          <div id="aboutSlideshow"></div>
+        </section>
+
+        <section class="about__content">
+          <div class="about__card" id="aboutCard">
+            <button
+              class="about__close ios-bubble ios-bubble--dramatic ios-bubble--close liquid-glass"
+              id="aboutCloseBtn"
+
+              type="button"
+              aria-label="Close About Me"
+            >
+              ×
+            </button>
+
             <h1 class="about__title wipe-type tw-cursor anim-delay-1">
               About Me
             </h1>

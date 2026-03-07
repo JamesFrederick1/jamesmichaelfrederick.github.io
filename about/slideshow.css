@@ -1,0 +1,208 @@
+/* /about/slideshow.css */
+
+/* =========================================================
+   MAIN CONTROLS
+   ========================================================= */
+:root {
+  --about-slideshow-height: 470px;
+  --about-slideshow-radius: 0px;
+  --about-slideshow-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  --about-slideshow-top-gap: 0px;
+
+  --about-card-max-width: 820px;
+  --about-card-top: 32px;
+  --about-card-side-pad: 20px;
+
+  --about-dot-size: 10px;
+  --about-dot-gap: 8px;
+  --about-dot-bottom: 14px;
+
+  --about-slide-ms: 380ms;
+
+  /* desktop crop/stretch mode: fill | cover | contain */
+  --about-desktop-fit: cover;
+
+  /* desktop whole-page blur background */
+  --about-page-blur: 32px;
+  --about-page-blur-scale: 1.1;
+  --about-page-blur-opacity: 0.9;
+  --about-page-blur-brightness: 0.9;
+}
+
+/* =========================================================
+   WHOLE PAGE DESKTOP BLUR BACKGROUND
+   Desktop only. Mobile file stays untouched.
+   ========================================================= */
+@media (min-width: 601px) {
+  .page-bg {
+    position: relative;
+    background: transparent;
+  }
+
+  .page-bg::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background-image: var(--about-page-bg-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    filter: blur(var(--about-page-blur)) brightness(var(--about-page-blur-brightness));
+    transform: scale(var(--about-page-blur-scale));
+    opacity: var(--about-page-blur-opacity);
+
+    will-change: background-image, transform, filter, opacity;
+  }
+
+  .page-bg::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.14);
+  }
+
+  .page-bg > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* =========================================================
+   SECTION LAYOUT
+   ========================================================= */
+.about__hero {
+  width: 100%;
+  margin-top: var(--about-slideshow-top-gap);
+}
+
+.about__content {
+  width: 100%;
+  padding-inline: var(--about-card-side-pad);
+}
+
+/* slideshow mount */
+#aboutSlideshow {
+  width: 100%;
+}
+
+/* =========================================================
+   SLIDESHOW BOX
+   ========================================================= */
+.slideshow {
+  position: relative;
+  width: 100vw;
+  height: var(--about-slideshow-height);
+  left: 50%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border-radius: var(--about-slideshow-radius);
+  box-shadow: var(--about-slideshow-shadow);
+  outline: none;
+  background: #111;
+}
+
+.slideshow__slides {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.slideshow__slide {
+  position: absolute;
+  inset: -1px;
+  transform: translate3d(100%, 0, 0);
+  visibility: hidden;
+  z-index: 1;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.slideshow__slide.is-active {
+  transform: translate3d(0, 0, 0);
+  visibility: visible;
+  z-index: 2;
+}
+
+.slideshow__slide.is-prev {
+  transform: translate3d(-100%, 0, 0);
+  visibility: visible;
+  z-index: 1;
+}
+
+.slideshow__slide.is-next {
+  transform: translate3d(100%, 0, 0);
+  visibility: visible;
+  z-index: 1;
+}
+
+.slideshow__slide.is-animating {
+  transition: transform var(--about-slide-ms) ease;
+}
+
+/* desktop uses whole-page blur, not in-box blur */
+.slideshow__bg {
+  display: none;
+}
+
+.slideshow__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: var(--about-desktop-fit);
+  object-position: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* =========================================================
+   DOTS
+   ========================================================= */
+.slideshow__dots {
+  position: absolute;
+  left: 50%;
+  bottom: var(--about-dot-bottom);
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--about-dot-gap);
+  z-index: 4;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.slideshow__dot {
+  width: var(--about-dot-size);
+  height: var(--about-dot-size);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.45);
+  transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease;
+}
+
+.slideshow__dot:hover {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.slideshow__dot.is-active {
+  background: #fff;
+  transform: scale(1.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slideshow__slide.is-animating,
+  .slideshow__dot,
+  .page-bg::before {
+    transition: none !important;
+  }
+}

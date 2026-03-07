@@ -1,0 +1,78 @@
+/* /about/slideshow-mobile.css */
+
+:root {
+  --about-slideshow-height-mobile: 100vh;
+  --about-slideshow-mobile-side-gap: 0px;
+  --about-slideshow-mobile-radius: 0px;
+
+  --about-card-top-mobile: 18px;
+  --about-card-side-pad-mobile: 12px;
+
+  /* mobile crop/stretch mode: fill | cover | contain */
+  --about-mobile-fit: contain;
+
+  /* optional blurred background fill behind image */
+  --about-mobile-blur-enabled: 0;
+  --about-mobile-blur: 20px;
+  --about-mobile-blur-scale: 1.06;
+  --about-mobile-blur-opacity: 0.9;
+
+  --about-mobile-dot-top: 45.5rem;
+}
+
+/* mobile slideshow size */
+.slideshow {
+  width: calc(100vw - (var(--about-slideshow-mobile-side-gap) * 2));
+  height: var(--about-slideshow-height-mobile);
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: var(--about-slideshow-mobile-radius);
+}
+
+/* mobile image fit mode */
+.slideshow__img {
+  width: 100%;
+  height: 100%;
+  object-fit: var(--about-mobile-fit);
+  object-position: center;
+}
+
+/* optional blur fill values for mobile */
+.slideshow--blur-fill .slideshow__bg {
+  filter: blur(var(--about-mobile-blur));
+  transform: scale(var(--about-mobile-blur-scale));
+  opacity: var(--about-mobile-blur-opacity);
+}
+
+/* mobile card spacing */
+.about__content {
+  padding-inline: var(--about-card-side-pad-mobile);
+}
+
+@media (max-width: 600px) {
+  .about {
+    padding: 0;
+  }
+
+  .about__content {
+    margin-top: -640px;
+    padding-inline: 12px;
+  }
+
+  .about__card {
+    padding: 1.25rem;
+  }
+
+  /* move dots to top on mobile only */
+  .slideshow__dots {
+    top: var(--about-mobile-dot-top);
+    bottom: auto;
+  }
+}
+
+.slideshow--blur-fill .slideshow__bg {
+  display: block;
+  filter: blur(var(--about-mobile-blur));
+  transform: scale(var(--about-mobile-blur-scale));
+  opacity: var(--about-mobile-blur-opacity);
+}

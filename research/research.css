@@ -75,3 +75,21 @@ nav a.active {
     border-bottom: 2px solid;
     pointer-events: none; 
 }
+
+
+html,
+body{
+  background: linear-gradient(180deg, #f7f9fc 0%, #eef3f9 100%) !important;
+}
+
+body{
+  padding-top: 0 !important;
+}
+
+/* page owns the visible background area */
+.research-section{
+  min-height: 100vh;
+  padding: calc(var(--nav-h) + 24px) 16px 40px !important;
+  background: #0D5EAF;
+    background: linear-gradient(170deg, rgba(13, 94, 175, 1) 0%, rgba(255, 255, 255, 1) 75%, rgba(212, 175, 55, 1) 100%);
+}

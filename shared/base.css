@@ -74,10 +74,6 @@ body.modal-open .widgets{
   --anim-dist: 40px;
 }
 
-/* optional: respect reduced motion */
-@media (prefers-reduced-motion: reduce){
-  *{ animation: none !important; transition: none !important; }
-}
 
 
 .pop-up{
@@ -244,7 +240,7 @@ body.modal-open .widgets{
 /* slide up utility */
 .slide-up{
   opacity: 0;
-  transform: translateY(22px);
+  transform: translateY(220px);
   animation: slideUp var(--anim-dur) var(--anim-ease) var(--anim-delay) forwards;
   will-change: transform, opacity;
 }
@@ -266,12 +262,14 @@ body.modal-open .widgets{
 
 /* ✅ Generic liquid-glass effect (used by banner + anything else)
    - Controlled by CSS variables (banner overrides set these vars) */
+/* ✅ Generic liquid-glass effect (used by banner + anything else)
+   - Controlled by CSS variables (banner overrides set these vars) */
 .liquid-glass{
   position: relative;
   border-radius: var(--glass-radius, 28px);
-  overflow: hidden; /* default clip for the glass sheet */
+  overflow: hidden;
+  isolation: isolate; /* creates clean local stacking context */
   filter: var(--glass-drop, drop-shadow(-8px -10px 46px #0000005f));
-
 }
 
 .liquid-glass::before{
@@ -280,12 +278,11 @@ body.modal-open .widgets{
   inset:0;
   border-radius: inherit;
   pointer-events:none;
+  z-index: 0; /* keep glass layer behind children */
 
-  /* glass tint / border (variable-driven) */
   background: var(--glass-bg, rgba(255,255,255,0.10));
   border: 1px solid var(--glass-border, rgba(255,255,255,0.18));
 
-  /* frosted + “amplify” underneath (variable-driven) */
   backdrop-filter:
     brightness(var(--glass-bright, 1.1))
     blur(var(--glass-blur, 12px));
@@ -293,6 +290,11 @@ body.modal-open .widgets{
     brightness(var(--glass-bright, 1.1))
     blur(var(--glass-blur, 12px));
 
-  /* your liquid warp */
   filter: url(#liquidGlass);
+}
+
+/* put actual content above the glass layer */
+.liquid-glass > *{
+  position: relative;
+  z-index: 1;
 }
