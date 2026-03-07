@@ -49,6 +49,7 @@
 
   z-index: 1000;
   overflow: visible;
+  backdrop-filter: blur(3px) saturate(150%) !important;
 }
 
 /* blurrier glass only on the tray, not the gold pill */
@@ -78,7 +79,7 @@
   position: relative;
 
   /* tighter so the strip hugs the content better */
-  padding: 6px 12px;
+  padding: 0px 12px;
   isolation: isolate;
 }
 
@@ -402,5 +403,4 @@ body.modal-open #authArea #authLoginBtn::after{
   position: relative;
   z-index: 1;
 }
-
 
