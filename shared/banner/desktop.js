@@ -33,14 +33,14 @@ const DESKTOP_SPOT = {
   HIDE_ON_HOME: true,
   TRANSITION:
     "transform 240ms cubic-bezier(.22,.9,.18,1), width 220ms cubic-bezier(.22,.9,.18,1), height 220ms cubic-bezier(.22,.9,.18,1)",
-  AUTH_WIDTH_PAD: 18,
-  LINK_WIDTH_PAD: 22,
+  AUTH_WIDTH_PAD: 24,
+  LINK_WIDTH_PAD: 25,
   AUTH_MIN_W: 52,
   AUTH_MAX_W: 150,
   LINK_MIN_W: 58,
   LINK_MAX_W: 170,
   AUTH_H: 40,
-  LINK_H: 38,
+  LINK_H: 40,
 };
 
 export function initDesktopSpotlight(state) {
