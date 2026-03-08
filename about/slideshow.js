@@ -2,12 +2,11 @@
 (() => {
   const CONFIG = {
     breakpoint: 600,
-    autoplayMs: 2400,
+    autoplayMs: 3200,
     swipeThreshold: 35,
     startIndex: 0,
-    transitionMs: 380,
-    pauseOnHover: false,
-    blurFill: true,
+    rebuildDebounceMs: 120,
+    edgePadPxFallback: 18,
 
     desktopImages: [
       "/shared/slideshow/desktop/img1.jpeg",
@@ -34,24 +33,30 @@
   let mode = getMode();
   let images = getImagesForMode(mode);
   let current = normalizeIndex(CONFIG.startIndex, images.length);
-  let intervalId = null;
-  let touchStartX = 0;
-  let animating = false;
-  let paused = false;
-  let resizeTimer = null;
 
-  let slideshow = null;
-  let slidesWrap = null;
+  let autoplayEnabled = false;
+  let autoplayTimer = null;
+  let resizeTimer = null;
+  let animating = false;
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  let root = null;
+  let laneBox = null;
+
+  const currentPair = { full: null, pill: null };
+  const nextPair = { full: null, pill: null };
+
   let dotsWrap = null;
-  let slides = [];
   let dots = [];
 
   function getMode() {
     return window.innerWidth <= CONFIG.breakpoint ? "mobile" : "desktop";
   }
 
-  function getImagesForMode(currentMode) {
-    return (currentMode === "mobile" ? CONFIG.phoneImages : CONFIG.desktopImages).slice();
+  function getImagesForMode(nextMode) {
+    return (nextMode === "mobile" ? CONFIG.phoneImages : CONFIG.desktopImages).slice();
   }
 
   function normalizeIndex(index, length) {
@@ -59,80 +64,370 @@
     return ((index % length) + length) % length;
   }
 
-  function updateDesktopPageBlur(src) {
-    if (!pageBg) return;
+  function preloadImages(list) {
+    list.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }
 
-    if (mode === "desktop") {
-      pageBg.style.setProperty("--about-page-bg-image", `url("${src}")`);
-    } else {
-      pageBg.style.removeProperty("--about-page-bg-image");
+  function updatePageBackdrop(src) {
+    if (!pageBg || !src) return;
+    pageBg.style.setProperty("--about-page-bg-image", `url("${src}")`);
+  }
+
+  function setImgSrc(el, src) {
+    if (!el || !src) return;
+    if (el.getAttribute("src") !== src) {
+      el.setAttribute("src", src);
     }
   }
 
-  function clearSlideClasses() {
-    slides.forEach((slide) => {
-      slide.classList.remove("is-active", "is-prev", "is-next", "is-animating");
-    });
+  function getMs(varName, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    if (!value) return fallback;
+
+    if (value.endsWith("ms")) {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    if (value.endsWith("s")) {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed * 1000 : fallback;
+    }
+
+    return fallback;
   }
 
-  function renderStatic() {
-    if (!slides.length) return;
+  function getNumber(varName, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    if (!value) return fallback;
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
 
-    clearSlideClasses();
+  function getTiming() {
+    return {
+      shrinkMs: getMs("--about-shrink-ms", 220),
+      travelMs: getMs("--about-travel-ms", 820),
+      settleMs: getMs("--about-settle-ms", 220),
+      growMs: getMs("--about-pill-grow-ms", 520),
+      backdropSwapDelayMs: getMs("--about-backdrop-swap-delay-ms", 0),
 
-    const prev = normalizeIndex(current - 1, slides.length);
-    const next = normalizeIndex(current + 1, slides.length);
+      activeFullOpacity: getNumber("--about-active-lane-opacity", 0.96),
+      travelFullOpacity: getNumber("--about-outgoing-travel-lane-opacity", 0.26),
+      edgePadPx: getNumber("--about-travel-edge-pad", CONFIG.edgePadPxFallback),
 
-    slides[current].classList.add("is-active");
-    slides[prev].classList.add("is-prev");
-    slides[next].classList.add("is-next");
+      // pill scale controls when container-2 image blur is allowed to show
+      blurSwitchScale: getNumber("--about-blur-switch-scale", 0.56),
+    };
+  }
 
+  function getTravelPercent() {
+    if (!laneBox) return 100;
+
+    const rect = laneBox.getBoundingClientRect();
+    const { edgePadPx } = getTiming();
+
+    if (!rect.width || rect.width <= edgePadPx * 2) return 100;
+
+    const usable = rect.width - edgePadPx * 2;
+    return (usable / rect.width) * 100;
+  }
+
+  function clearAutoplay() {
+    if (autoplayTimer) {
+      window.clearTimeout(autoplayTimer);
+      autoplayTimer = null;
+    }
+  }
+
+  function queueAutoplay() {
+    clearAutoplay();
+    if (!autoplayEnabled || animating || images.length <= 1) return;
+
+    autoplayTimer = window.setTimeout(() => {
+      goTo(current + 1);
+    }, CONFIG.autoplayMs);
+  }
+
+  function buildDot(index) {
+    const btn = document.createElement("button");
+    btn.className = "slideshow__dot";
+    btn.type = "button";
+    btn.setAttribute("aria-label", `Go to slide ${index + 1}`);
+    btn.addEventListener("click", () => {
+      if (!autoplayEnabled || animating) return;
+      goTo(index);
+    });
+    return btn;
+  }
+
+  function build() {
+    mode = getMode();
+    images = getImagesForMode(mode);
+    current = normalizeIndex(current, images.length);
+    preloadImages(images);
+
+    mount.innerHTML = `
+      <div class="slideshow" aria-label="About slideshow">
+        <div class="slideshow__viewport">
+          <div class="slideshow__lane" aria-hidden="true">
+            <div class="slideshow__lane-track">
+              <img class="slideshow__img slideshow__img--lane slideshow__img--current" alt="" draggable="false" />
+              <img class="slideshow__img slideshow__img--lane slideshow__img--next" alt="" draggable="false" />
+            </div>
+          </div>
+
+          <div class="slideshow__chamber" aria-hidden="true">
+            <div class="slideshow__chamber-shell"></div>
+          </div>
+
+          <div class="slideshow__pill" aria-hidden="true">
+            <div class="slideshow__pill-track">
+              <img class="slideshow__img slideshow__img--pill slideshow__img--current" alt="" draggable="false" />
+              <img class="slideshow__img slideshow__img--pill slideshow__img--next" alt="" draggable="false" />
+            </div>
+          </div>
+        </div>
+
+        <div class="slideshow__dots" aria-label="Slideshow navigation"></div>
+      </div>
+    `;
+
+    root = mount.querySelector(".slideshow");
+    laneBox = mount.querySelector(".slideshow__lane");
+
+    currentPair.full = mount.querySelector('.slideshow__img--lane.slideshow__img--current');
+    currentPair.pill = mount.querySelector('.slideshow__img--pill.slideshow__img--current');
+    nextPair.full = mount.querySelector('.slideshow__img--lane.slideshow__img--next');
+    nextPair.pill = mount.querySelector('.slideshow__img--pill.slideshow__img--next');
+
+    dotsWrap = mount.querySelector(".slideshow__dots");
+
+    dots = [];
+    images.forEach((_, index) => {
+      const dot = buildDot(index);
+      dotsWrap.appendChild(dot);
+      dots.push(dot);
+    });
+
+    bindEvents();
+    renderRestState();
+  }
+
+  function updateDots(activeIndex) {
     dots.forEach((dot, index) => {
-      dot.classList.toggle("is-active", index === current);
+      dot.classList.toggle("is-active", index === activeIndex);
     });
-
-    updateDesktopPageBlur(images[current]);
   }
 
-  function finishTransition(nextIndex) {
-    current = nextIndex;
-    animating = false;
-    renderStatic();
-    restartAutoplay();
+  function setPairSrc(pair, src) {
+    setImgSrc(pair.full, src);
+    setImgSrc(pair.pill, src);
   }
 
-  function goTo(targetIndex) {
-    if (animating || !slides.length) return;
+  function clearPairTransition(pair) {
+    pair.full.style.transition = "none";
+    pair.pill.style.transition = "none";
+  }
 
-    const nextIndex = normalizeIndex(targetIndex, slides.length);
+  function setPairTransform(pair, xPercent, scale) {
+    const t = `translate3d(${xPercent}%, 0, 0) scale(${scale})`;
+    pair.full.style.transform = t;
+    pair.pill.style.transform = t;
+  }
+
+  function setPairTransition(pair, transformMs, opacityMs = transformMs) {
+    pair.full.style.transition =
+      `transform ${transformMs}ms var(--about-ease-main), opacity ${opacityMs}ms var(--about-ease-soft)`;
+    pair.pill.style.transition =
+      `transform ${transformMs}ms var(--about-ease-main), opacity ${opacityMs}ms var(--about-ease-soft)`;
+  }
+
+  function setPairOpacity(pair, fullOpacity, pillOpacity) {
+    pair.full.style.opacity = String(fullOpacity);
+    pair.pill.style.opacity = String(pillOpacity);
+  }
+
+  function nextFrame() {
+    return new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function animatePhase(duration, step) {
+    return new Promise((resolve) => {
+      const start = performance.now();
+
+      function frame(now) {
+        const raw = Math.min(1, (now - start) / duration);
+        const eased = easeOutCubic(raw);
+        step(eased, raw);
+
+        if (raw < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          resolve();
+        }
+      }
+
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function renderRestState() {
+    if (!root || !images.length) return;
+
+    const currentSrc = images[current];
+    const nextSrc = images[normalizeIndex(current + 1, images.length)];
+    const { activeFullOpacity } = getTiming();
+    const travelX = getTravelPercent();
+
+    setPairSrc(currentPair, currentSrc);
+    setPairSrc(nextPair, nextSrc);
+
+    clearPairTransition(currentPair);
+    clearPairTransition(nextPair);
+
+    setPairTransform(currentPair, 0, 1);
+    setPairOpacity(currentPair, activeFullOpacity, 1);
+
+    setPairTransform(nextPair, travelX, 0.4);
+    setPairOpacity(nextPair, 0, 0);
+
+    updateDots(current);
+    updatePageBackdrop(currentSrc);
+
+    await nextFrame();
+
+    currentPair.full.style.transition = "";
+    currentPair.pill.style.transition = "";
+    nextPair.full.style.transition = "";
+    nextPair.pill.style.transition = "";
+  }
+
+  function getDirection(targetIndex) {
+    const nextIndex = normalizeIndex(targetIndex, images.length);
+
+    if (nextIndex === normalizeIndex(current + 1, images.length)) return 1;
+    if (nextIndex === normalizeIndex(current - 1, images.length)) return -1;
+
+    const forward = (nextIndex - current + images.length) % images.length;
+    const backward = (current - nextIndex + images.length) % images.length;
+
+    return forward <= backward ? 1 : -1;
+  }
+
+  async function goTo(targetIndex) {
+    if (!autoplayEnabled || animating || images.length <= 1 || !root) return;
+
+    const nextIndex = normalizeIndex(targetIndex, images.length);
     if (nextIndex === current) return;
 
-    const oldIndex = current;
-    const forward = nextIndex === normalizeIndex(oldIndex + 1, slides.length);
-
     animating = true;
-    clearSlideClasses();
+    clearAutoplay();
 
-    slides.forEach((slide) => {
-      slide.classList.add("is-animating");
+    const direction = getDirection(nextIndex);
+    const {
+      shrinkMs,
+      travelMs,
+      settleMs,
+      growMs,
+      backdropSwapDelayMs,
+      activeFullOpacity,
+      travelFullOpacity,
+      blurSwitchScale,
+    } = getTiming();
+
+    const travelX = getTravelPercent();
+    const enterX = direction > 0 ? travelX : -travelX;
+    const leaveX = direction > 0 ? -travelX : travelX;
+
+    const currentSrc = images[current];
+    const nextSrc = images[nextIndex];
+
+    setPairSrc(currentPair, currentSrc);
+    setPairSrc(nextPair, nextSrc);
+
+    clearPairTransition(currentPair);
+    clearPairTransition(nextPair);
+
+    // Active current
+    setPairTransform(currentPair, 0, 1);
+    setPairOpacity(currentPair, activeFullOpacity, 1);
+
+    // Incoming starts offscreen, hidden
+    setPairTransform(nextPair, enterX, 0.4);
+    setPairOpacity(nextPair, 0, 0);
+
+    updateDots(nextIndex);
+
+    await nextFrame();
+
+    // 1) SHRINK IN PLACE
+    // Container 2 image stays on until pill scale crosses the switch threshold.
+    await animatePhase(shrinkMs, (eased) => {
+      const scale = lerp(1, 0.4, eased);
+      setPairTransform(currentPair, 0, scale);
+
+      const fullOpacity = scale > blurSwitchScale ? activeFullOpacity : 0;
+      setPairOpacity(currentPair, fullOpacity, 1);
     });
 
-    slides[oldIndex].classList.add("is-active");
-    slides[nextIndex].classList.add(forward ? "is-next" : "is-prev");
+    // 2) TRAVEL
+    // Current goes off through container 2; next comes from container 2 as pill-only.
+    await animatePhase(travelMs, (eased) => {
+      const currentX = lerp(0, leaveX, eased);
+      const nextX = lerp(enterX, 0, eased);
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        slides[oldIndex].classList.remove("is-active");
-        slides[oldIndex].classList.add(forward ? "is-prev" : "is-next");
+      setPairTransform(currentPair, currentX, 0.4);
+      setPairTransform(nextPair, nextX, 0.4);
 
-        slides[nextIndex].classList.remove(forward ? "is-next" : "is-prev");
-        slides[nextIndex].classList.add("is-active");
-      });
+      // current full visible during travel out, next full hidden during travel in
+      setPairOpacity(currentPair, travelFullOpacity, 1);
+      setPairOpacity(nextPair, 0, 1);
     });
 
-    window.setTimeout(() => {
-      finishTransition(nextIndex);
-    }, CONFIG.transitionMs);
+    if (backdropSwapDelayMs > 0) {
+      await wait(backdropSwapDelayMs);
+    }
+
+    updatePageBackdrop(nextSrc);
+
+    // hide old pair after it has already gone off through container 2
+    setPairOpacity(currentPair, 0, 0);
+
+    // 3) GROW AT CENTER
+    // Pill grows once. Container 2 image switches on when pill scale crosses threshold.
+    await animatePhase(growMs, (eased) => {
+      const scale = lerp(0.4, 1, eased);
+      setPairTransform(nextPair, 0, scale);
+
+      const fullOpacity = scale > blurSwitchScale ? activeFullOpacity : 0;
+      setPairOpacity(nextPair, fullOpacity, 1);
+    });
+
+    // small settle so old pair fully gone
+    currentPair.full.style.transition = `opacity ${settleMs}ms var(--about-ease-soft)`;
+    currentPair.pill.style.transition = `opacity ${settleMs}ms var(--about-ease-soft)`;
+    setPairOpacity(currentPair, 0, 0);
+
+    current = nextIndex;
+    await renderRestState();
+    animating = false;
+    queueAutoplay();
   }
 
   function next() {
@@ -143,96 +438,31 @@
     goTo(current - 1);
   }
 
-  function stopAutoplay() {
-    if (intervalId) {
-      window.clearInterval(intervalId);
-      intervalId = null;
-    }
-  }
-
-  function startAutoplay() {
-    stopAutoplay();
-
-    if (images.length <= 1) return;
-
-    intervalId = window.setInterval(() => {
-      if (!paused && !animating) {
-        next();
-      }
-    }, CONFIG.autoplayMs);
-  }
-
-  function restartAutoplay() {
-    stopAutoplay();
-    startAutoplay();
-  }
-
-  function preloadImages(list) {
-    list.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }
-
-  function buildSlide(src, index) {
-    const slide = document.createElement("div");
-    slide.className = "slideshow__slide";
-    slide.style.setProperty("--slide-image", `url("${src}")`);
-
-    const bg = document.createElement("div");
-    bg.className = "slideshow__bg";
-    bg.style.backgroundImage = `url("${src}")`;
-
-    const img = document.createElement("img");
-    img.className = "slideshow__img";
-    img.src = src;
-    img.alt = `Slideshow image ${index + 1}`;
-    img.loading = index === 0 ? "eager" : "lazy";
-    img.decoding = "async";
-    img.draggable = false;
-
-    slide.appendChild(bg);
-    slide.appendChild(img);
-    return slide;
-  }
-
-  function buildDot(index) {
-    const dot = document.createElement("button");
-    dot.className = "slideshow__dot";
-    dot.type = "button";
-    dot.setAttribute("aria-label", `Go to slide ${index + 1}`);
-    dot.addEventListener("click", () => {
-      goTo(index);
-    });
-    return dot;
-  }
-
   function bindEvents() {
-    if (!slideshow) return;
+    if (!root || root.dataset.bound === "true") return;
+    root.dataset.bound = "true";
 
-    if (CONFIG.pauseOnHover) {
-      slideshow.addEventListener("mouseenter", () => {
-        paused = true;
-      });
+    root.tabIndex = 0;
 
-      slideshow.addEventListener("mouseleave", () => {
-        paused = false;
-      });
-    }
-
-    slideshow.addEventListener(
+    root.addEventListener(
       "touchstart",
       (e) => {
         touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
       },
       { passive: true }
     );
 
-    slideshow.addEventListener(
+    root.addEventListener(
       "touchend",
       (e) => {
+        if (!autoplayEnabled || animating) return;
+
         const dx = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(dx) < CONFIG.swipeThreshold || animating) return;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+
+        if (Math.abs(dx) < CONFIG.swipeThreshold) return;
+        if (Math.abs(dx) < Math.abs(dy)) return;
 
         if (dx < 0) next();
         else prev();
@@ -240,56 +470,24 @@
       { passive: true }
     );
 
-    slideshow.tabIndex = 0;
-    slideshow.addEventListener("keydown", (e) => {
-      if (animating) return;
+    root.addEventListener("keydown", (e) => {
+      if (!autoplayEnabled || animating) return;
 
-      if (e.key === "ArrowRight") {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
         next();
-      } else if (e.key === "ArrowLeft") {
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
         prev();
       }
     });
   }
 
-  function build() {
-    mode = getMode();
-    images = getImagesForMode(mode);
-    current = normalizeIndex(current, images.length);
-    paused = false;
-    animating = false;
-
-    preloadImages(images);
-
-    mount.innerHTML = `
-      <div class="slideshow${CONFIG.blurFill ? " slideshow--blur-fill" : ""}" aria-label="About slideshow">
-        <div class="slideshow__slides"></div>
-        <div class="slideshow__dots" aria-label="Slideshow navigation"></div>
-      </div>
-    `;
-
-    slideshow = mount.querySelector(".slideshow");
-    slidesWrap = mount.querySelector(".slideshow__slides");
-    dotsWrap = mount.querySelector(".slideshow__dots");
-
-    slides = [];
-    dots = [];
-
-    images.forEach((src, index) => {
-      const slide = buildSlide(src, index);
-      slidesWrap.appendChild(slide);
-      slides.push(slide);
-
-      const dot = buildDot(index);
-      dotsWrap.appendChild(dot);
-      dots.push(dot);
-    });
-
-    bindEvents();
-    renderStatic();
-    startAutoplay();
+  function enableSlideshow() {
+    if (autoplayEnabled) return;
+    autoplayEnabled = true;
+    mount.classList.add("is-live");
+    queueAutoplay();
   }
 
   function handleResize() {
@@ -298,19 +496,24 @@
     resizeTimer = window.setTimeout(() => {
       const nextMode = getMode();
       if (nextMode !== mode) {
-        stopAutoplay();
+        clearAutoplay();
         build();
+        if (autoplayEnabled) queueAutoplay();
+      } else {
+        renderRestState();
       }
-    }, 120);
+    }, CONFIG.rebuildDebounceMs);
   }
 
   if (closeBtn && aboutCard) {
     closeBtn.addEventListener("click", () => {
       aboutCard.classList.add("about__card--closed");
+      enableSlideshow();
     });
+  } else {
+    enableSlideshow();
   }
 
-  window.addEventListener("resize", handleResize);
-
   build();
+  window.addEventListener("resize", handleResize);
 })();

@@ -1,6 +1,14 @@
 /* /about/slideshow-mobile.css */
 
 :root {
+  --about-mobile-chamber-radius: 80px;
+  --about-mobile-chamber-inset-top: 200px;
+  --about-mobile-chamber-inset-right: 20px;
+  --about-mobile-chamber-inset-bottom: 200px;
+  --about-mobile-chamber-inset-left: 20px;
+
+  --about-mobile-chamber-overscan: 18px;
+
   --about-slideshow-height-mobile: 110vh;
   --about-slideshow-mobile-side-gap: 0px;
   --about-slideshow-mobile-radius: 0px;
@@ -8,35 +16,48 @@
   --about-card-top-mobile: 18px;
   --about-card-side-pad-mobile: 12px;
 
-  /* mobile crop/stretch mode: fill | cover | contain */
-  --about-mobile-fit: contain;
+  --about-mobile-fit: cover;
 
-  /* blur layer 1: big atmosphere blur */
-  --about-mobile-bg-blur: 100px;
-  --about-mobile-bg-blur-scale: 1.18;
-  --about-mobile-bg-blur-opacity: 0.75;
-  --about-mobile-bg-blur-bleed: 80px;
+  /* container 3 / image 3 */
+  --about-mobile-page-blur: 1000px;
+  --about-mobile-page-blur-scale: 1.2;
+  --about-mobile-page-blur-opacity: 0.74;
+  --about-mobile-page-brightness: 0.9;
 
-  /* blur layer 2: outside-pill slight blur */
-  --about-mobile-outside-pill-blur: 1px;
-  --about-mobile-outside-pill-scale: 1.01;
+  /* container 2 / blur lane */
+  --about-mobile-chamber-blur: 1px;
 
-  /* mobile dots */
+  /* pill */
+  --about-mobile-pill-inset-y: 230px;
+  --about-mobile-pill-inset-x: 60px;
+  --about-mobile-pill-radius: 999px;
+
+  /* slightly cropped pill */
+  --about-mobile-pill-visual-inset-y: 2px;
+  --about-mobile-pill-visual-inset-x: 6px;
+
+  /* motion */
+  --about-mobile-travel-x: 92%;
+  --about-mobile-shrink-ms: 220ms;
+  --about-mobile-travel-ms: 440ms;
+  --about-mobile-settle-ms: 260ms;
+  --about-mobile-pill-grow-ms: 520ms;
+
+  /* dots */
   --about-mobile-dot-top: 47.5rem;
   --about-mobile-dot-bg: rgba(255, 255, 255, 0.08);
-  --about-mobile-dot-border: rgba(255, 255, 255, 0.20);
   --about-mobile-dot-idle: white;
   --about-mobile-dot-hover: #D4AF37;
   --about-mobile-dot-active: #0d5eaf;
 
-  /* mobile glass border */
+  /* glass */
   --about-mobile-glass-border-width: 1px;
   --about-mobile-glass-border: rgba(255, 255, 255, 0.34);
   --about-mobile-glass-shadow-outer: 0 4px 14px rgba(0, 0, 0, 0.12);
   --about-mobile-glass-shadow-inner-top: rgba(255, 255, 255, 0.28);
   --about-mobile-glass-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
 
-  /* mobile sheen controls */
+  /* sheen */
   --about-mobile-sheen-inset: 1px;
   --about-mobile-glass-top: rgba(255, 255, 255, 0.18);
   --about-mobile-glass-mid: rgba(255, 255, 255, 0.08);
@@ -46,11 +67,7 @@
   --about-mobile-sheen-stop-3: 28%;
   --about-mobile-sheen-stop-4: 46%;
 
-  /* mobile glass pill controls */
-  --about-mobile-pill-enabled: 1;
-  --about-mobile-pill-inset-y: 250px;
-  --about-mobile-pill-inset-x: 12px;
-  --about-mobile-pill-radius: 999px;
+  /* pill border */
   --about-mobile-pill-border-width: 1px;
   --about-mobile-pill-border: rgba(255, 255, 255, 0.24);
   --about-mobile-pill-shadow-outer: 0 4px 12px rgba(0, 0, 0, 0.10);
@@ -58,138 +75,73 @@
   --about-mobile-pill-shadow-inner-bottom: rgba(255, 255, 255, 0.05);
 }
 
-/* mobile slideshow size */
-.slideshow {
-  width: calc(100vw - (var(--about-slideshow-mobile-side-gap) * 2));
-  height: var(--about-slideshow-height-mobile);
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: var(--about-slideshow-mobile-radius);
-}
-
-/* make the slide itself clip cleanly */
-.slideshow__slide {
-  overflow: hidden;
-  border-radius: inherit;
-}
-
-/* LAYER 1: huge soft blur behind everything */
-.slideshow__bg {
-  display: block;
-  position: absolute;
-  top: calc(-1 * var(--about-mobile-bg-blur-bleed));
-  right: calc(-1 * var(--about-mobile-bg-blur-bleed));
-  bottom: calc(-1 * var(--about-mobile-bg-blur-bleed));
-  left: calc(-1 * var(--about-mobile-bg-blur-bleed));
-  z-index: 0;
-  pointer-events: none;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  filter: blur(var(--about-mobile-bg-blur));
-  transform: scale(var(--about-mobile-bg-blur-scale));
-  opacity: var(--about-mobile-bg-blur-opacity);
-}
-
-/* LAYER 2: slightly blurred full image */
-.slideshow__img {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  object-fit: var(--about-mobile-fit);
-  object-position: center;
-  filter: blur(var(--about-mobile-outside-pill-blur));
-  transform: scale(var(--about-mobile-outside-pill-scale));
-}
-
-/* LAYER 3: clear image only inside pill */
 @media (max-width: 600px) {
-  .slideshow__slide::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
+  :root {
+    --about-chamber-radius: var(--about-mobile-chamber-radius);
+    --about-chamber-inset-top: var(--about-mobile-chamber-inset-top);
+    --about-chamber-inset-right: var(--about-mobile-chamber-inset-right);
+    --about-chamber-inset-bottom: var(--about-mobile-chamber-inset-bottom);
+    --about-chamber-inset-left: var(--about-mobile-chamber-inset-left);
 
-    background-image: var(--slide-image);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: var(--about-mobile-fit);
+    --about-chamber-overscan: var(--about-mobile-chamber-overscan);
 
-    clip-path: inset(
-      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-y))
-      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-x))
-      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-y))
-      calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-inset-x))
-      round var(--about-mobile-pill-radius)
-    );
-  }
-}
+    
+    --about-slideshow-height: var(--about-slideshow-height-mobile);
+    --about-slideshow-width: calc(100vw - (var(--about-slideshow-mobile-side-gap) * 2));
+    --about-slideshow-radius: var(--about-slideshow-mobile-radius);
 
-/* mobile card spacing */
-.about__content {
-  padding-inline: var(--about-card-side-pad-mobile);
-}
+    --about-stage-fit: var(--about-mobile-fit);
 
-@media (max-width: 600px) {
-  .about {
-    padding: 0;
-  }
+    --about-page-blur: var(--about-mobile-page-blur);
+    --about-page-blur-scale: var(--about-mobile-page-blur-scale);
+    --about-page-blur-opacity: var(--about-mobile-page-blur-opacity);
+    --about-page-blur-brightness: var(--about-mobile-page-brightness);
 
-  .about__content {
-    margin-top: -640px;
-    padding-inline: 12px;
-  }
+    --about-chamber-blur: var(--about-mobile-chamber-blur);
 
-  .about__card {
-    padding: 1.25rem;
-  }
+    --about-pill-inset-y: var(--about-mobile-pill-inset-y);
+    --about-pill-inset-x: var(--about-mobile-pill-inset-x);
+    --about-pill-radius: var(--about-mobile-pill-radius);
 
-  /* mobile glass border */
-  .slideshow__slides::before {
-    border: var(--about-mobile-glass-border-width) solid var(--about-mobile-glass-border);
-    box-shadow:
-      inset 0 1px 0 var(--about-mobile-glass-shadow-inner-top),
-      inset 0 -1px 0 var(--about-mobile-glass-shadow-inner-bottom),
-      var(--about-mobile-glass-shadow-outer);
-  }
+    --about-pill-visual-inset-y: var(--about-mobile-pill-visual-inset-y);
+    --about-pill-visual-inset-x: var(--about-mobile-pill-visual-inset-x);
 
-  /* mobile sheen */
-  .slideshow__slides::after {
-    inset: var(--about-mobile-sheen-inset);
-    background: linear-gradient(
-      to bottom,
-      var(--about-mobile-glass-top) var(--about-mobile-sheen-stop-1),
-      var(--about-mobile-glass-mid) var(--about-mobile-sheen-stop-2),
-      var(--about-mobile-glass-low) var(--about-mobile-sheen-stop-3),
-      rgba(255, 255, 255, 0) var(--about-mobile-sheen-stop-4)
-    );
+    --about-travel-x: var(--about-mobile-travel-x);
+    --about-shrink-ms: var(--about-mobile-shrink-ms);
+    --about-travel-ms: var(--about-mobile-travel-ms);
+    --about-settle-ms: var(--about-mobile-settle-ms);
+    --about-pill-grow-ms: var(--about-mobile-pill-grow-ms);
+
+    --about-glass-border-width: var(--about-mobile-glass-border-width);
+    --about-glass-border-color: var(--about-mobile-glass-border);
+    --about-glass-border-shadow-outer: var(--about-mobile-glass-shadow-outer);
+    --about-glass-border-shadow-inner-top: var(--about-mobile-glass-shadow-inner-top);
+    --about-glass-border-shadow-inner-bottom: var(--about-mobile-glass-shadow-inner-bottom);
+
+    --about-glass-sheen-inset: var(--about-mobile-sheen-inset);
+    --about-glass-sheen-top: var(--about-mobile-glass-top);
+    --about-glass-sheen-mid: var(--about-mobile-glass-mid);
+    --about-glass-sheen-low: var(--about-mobile-glass-low);
+    --about-glass-sheen-stop-1: var(--about-mobile-sheen-stop-1);
+    --about-glass-sheen-stop-2: var(--about-mobile-sheen-stop-2);
+    --about-glass-sheen-stop-3: var(--about-mobile-sheen-stop-3);
+    --about-glass-sheen-stop-4: var(--about-mobile-sheen-stop-4);
+
+    --about-pill-border-width: var(--about-mobile-pill-border-width);
+    --about-pill-border-color: var(--about-mobile-pill-border);
+    --about-pill-shadow-outer: var(--about-mobile-pill-shadow-outer);
+    --about-pill-shadow-inner-top: var(--about-mobile-pill-shadow-inner-top);
+    --about-pill-shadow-inner-bottom: var(--about-mobile-pill-shadow-inner-bottom);
   }
 
-  /* mobile glass pill */
-  .slideshow::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: var(--about-mobile-pill-inset-y) var(--about-mobile-pill-inset-x);
-    z-index: 4;
-    pointer-events: none;
-    border-radius: var(--about-mobile-pill-radius);
-    border: calc(var(--about-mobile-pill-enabled) * var(--about-mobile-pill-border-width)) solid var(--about-mobile-pill-border);
-    box-shadow:
-      inset 0 1px 0 var(--about-mobile-pill-shadow-inner-top),
-      inset 0 -1px 0 var(--about-mobile-pill-shadow-inner-bottom),
-      var(--about-mobile-pill-shadow-outer);
-    opacity: var(--about-mobile-pill-enabled);
+  .slideshow {
+    margin-top: 0;
   }
 
-  /* mobile dots positioning + colors */
   .slideshow__dots {
     top: var(--about-mobile-dot-top);
     bottom: auto;
     background: var(--about-mobile-dot-bg);
-    border: none;
   }
 
   .slideshow__dot {
@@ -203,10 +155,4 @@
   .slideshow__dot.is-active {
     background: var(--about-mobile-dot-active);
   }
-}
-.slideshow::before {
-  box-shadow:
-    inset 0 2px 0 var(--about-mobile-pill-shadow-inner-top),
-    inset 0 -4px 0 var(--about-mobile-pill-shadow-inner-bottom),
-    0 24px 40px rgba(0, 0, 0, 0.28);
 }

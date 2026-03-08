@@ -1,55 +1,51 @@
 /* /about/slideshow.css */
 
-/* =========================================================
-   DESKTOP CONTROLS
-   ========================================================= */
 :root {
-  /* frame */
   --about-slideshow-height: 470px;
   --about-slideshow-width: 80vw;
   --about-slideshow-radius: 100px;
   --about-slideshow-shadow: 10px 6px 40px 30px #000000;
   --about-slideshow-top-gap: 0px;
-
-  /* layout */
-  --about-card-max-width: 820px;
-  --about-card-top: 32px;
   --about-card-side-pad: 20px;
 
-  /* slide motion */
-  --about-slide-ms: 380ms;
+  /* container 3 / image 3 */
+  --about-page-blur: 100px;
+  --about-page-blur-scale: 1.14;
+  --about-page-blur-opacity: 0.76;
+  --about-page-blur-brightness: 0.88;
+  --about-page-overlay: rgba(0, 0, 0, 0.16);
 
-  /* image fit / tone */
-  --about-desktop-fit: cover;
-  --about-desktop-image-filter: contrast(103%) opacity(100%) saturate(105%) brightness(98%);
+  /* image fit */
+  --about-stage-fit: cover;
 
-  /* whole-page desktop blur */
-  --about-page-blur: 4px;
-  --about-page-blur-scale: 1.10;
-  --about-page-blur-opacity: 0.90;
-  --about-page-blur-brightness: 0.90;
+  /* container 2 / blur lane */
+  --about-chamber-blur: 1px;
+  --about-chamber-opacity: 0.96;
+  --about-chamber-shell-opacity: 1;
+  --about-chamber-glow: rgba(255, 255, 255, 0.06);
 
-  /* dots */
-  --about-dot-size: 15px;
-  --about-dot-gap: 8px;
-  --about-dot-bottom: -45px;
-  --about-dot-pad-y: 8px;
-  --about-dot-pad-x: 10px;
-  --about-dot-bg: rgba(255, 255, 255, 0.10);
-  --about-dot-border: rgba(255, 255, 255, 0.22);
-  --about-dot-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-  --about-dot-hover: #D4AF37;
-  --about-dot-active: #0d5eaf;
-  --about-dot-idle: white;
+  /* container 1 / pill */
+  --about-pill-inset-y: 10px;
+  --about-pill-inset-x: 30px;
+  --about-pill-radius: 999px;
 
-  /* desktop glass border */
+  /* pill image is slightly cropped */
+  --about-pill-visual-inset-y: 4px;
+  --about-pill-visual-inset-x: 8px;
+
+  --about-pill-border-width: 1px;
+  --about-pill-border-color: rgba(255, 255, 255, 0.26);
+  --about-pill-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --about-pill-shadow-inner-top: rgba(255, 255, 255, 0.30);
+  --about-pill-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
+
+  /* stage glass */
   --about-glass-border-width: 1.5px;
   --about-glass-border-color: rgba(255, 255, 255, 0.30);
   --about-glass-border-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.16);
   --about-glass-border-shadow-inner-top: rgba(255, 255, 255, 0.30);
   --about-glass-border-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
 
-  /* desktop sheen on main border */
   --about-glass-sheen-inset: 1px;
   --about-glass-sheen-top: rgba(255, 255, 255, 0.16);
   --about-glass-sheen-mid: rgba(255, 255, 255, 0.07);
@@ -59,60 +55,79 @@
   --about-glass-sheen-stop-3: 24%;
   --about-glass-sheen-stop-4: 42%;
 
-  /* desktop glass pill */
-  --about-pill-enabled: 1;
-  --about-pill-inset-y: 10px;
-  --about-pill-inset-x: 30px;
-  --about-pill-radius: 300px;
-  --about-pill-border-width: 1px;
-  --about-pill-border-color: rgba(255, 255, 255, 0.26);
-  --about-pill-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.16);
-  --about-pill-shadow-inner-top: rgba(255, 255, 255, 0.30);
-  --about-pill-shadow-inner-bottom: rgba(255, 255, 255, 0.06);
+  /* motion */
+  --about-shrink-ms: 220ms;
+  --about-travel-ms: 3040ms;
+  --about-settle-ms: 260ms;
+  --about-pill-grow-ms: 520ms;
+  --about-backdrop-swap-delay-ms: 0ms;
+
+  --about-ease-main: cubic-bezier(0.22, 1, 0.36, 1);
+  --about-ease-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  /* padded travel lane */
+  --about-travel-x: 82%;
+
+  /* dots */
+  --about-dot-size: 15px;
+  --about-dot-gap: 8px;
+  --about-dot-bottom: -45px;
+  --about-dot-pad-y: 8px;
+  --about-dot-pad-x: 10px;
+  --about-dot-bg: rgba(255, 255, 255, 0.10);
+  --about-dot-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --about-dot-hover: #D4AF37;
+  --about-dot-active: #0d5eaf;
+  --about-dot-idle: white;
+
+  /* container 2 shape */
+  --about-chamber-radius: var(--about-slideshow-radius);
+  --about-chamber-inset-top: 0px;
+  --about-chamber-inset-right: 0px;
+  --about-chamber-inset-bottom: 0px;
+  --about-chamber-inset-left: 0px;
 }
 
 /* =========================================================
-   WHOLE PAGE DESKTOP BLUR BACKGROUND
+   CONTAINER 3 / IMAGE 3
    ========================================================= */
-@media (min-width: 601px) {
-  .page-bg {
-    position: relative;
-    background: transparent;
-  }
+.page-bg {
+  position: relative;
+  background: transparent;
+}
 
-  .page-bg::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image: var(--about-page-bg-image);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    filter: blur(var(--about-page-blur)) brightness(var(--about-page-blur-brightness));
-    transform: scale(var(--about-page-blur-scale));
-    opacity: var(--about-page-blur-opacity);
-    will-change: background-image, transform, filter, opacity;
-  }
+.page-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--about-page-bg-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(var(--about-page-blur)) brightness(var(--about-page-blur-brightness));
+  transform: scale(var(--about-page-blur-scale));
+  opacity: var(--about-page-blur-opacity);
+  will-change: background-image, transform, filter, opacity;
+}
 
-  .page-bg::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, 0.14);
-  }
+.page-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--about-page-overlay);
+}
 
-  .page-bg > * {
-    position: relative;
-    z-index: 1;
-  }
+.page-bg > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* =========================================================
-   SECTION LAYOUT
+   LAYOUT
    ========================================================= */
 .about__hero {
   width: 100%;
@@ -129,7 +144,7 @@
 }
 
 /* =========================================================
-   SLIDESHOW OUTER FRAME
+   ROOT STAGE
    ========================================================= */
 .slideshow {
   position: relative;
@@ -141,86 +156,149 @@
   overflow: visible;
   border-radius: var(--about-slideshow-radius);
   box-shadow: var(--about-slideshow-shadow);
-  outline: none;
   background: transparent;
   margin-top: -38px;
+  outline: none;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
 }
 
-/* actual clipping layer */
-.slideshow__slides {
+.slideshow__viewport {
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-  background: #111;
-}
-
-.slideshow__slide {
-  position: absolute;
-  inset: -1px;
-  transform: translate3d(100%, 0, 0);
-  visibility: hidden;
-  z-index: 1;
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: inherit;
   overflow: hidden;
-}
-
-.slideshow__slide.is-active {
-  transform: translate3d(0, 0, 0);
-  visibility: visible;
-  z-index: 2;
-}
-
-.slideshow__slide.is-prev {
-  transform: translate3d(-100%, 0, 0);
-  visibility: visible;
-  z-index: 1;
-}
-
-.slideshow__slide.is-next {
-  transform: translate3d(100%, 0, 0);
-  visibility: visible;
-  z-index: 1;
-}
-
-.slideshow__slide.is-animating {
-  transition: transform var(--about-slide-ms) ease;
-}
-
-/* desktop uses whole-page blur, not in-box blur */
-.slideshow__bg {
-  display: none;
-}
-
-/* image */
-.slideshow__img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: var(--about-desktop-fit);
-  object-position: center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-@media (min-width: 601px) {
-  .slideshow__img {
-    filter: var(--about-desktop-image-filter);
-  }
+  background: rgba(16, 16, 16, 0.18);
+  touch-action: pan-x;
+  overscroll-behavior: contain;
 }
 
 /* =========================================================
-   DESKTOP GLASS BORDER
+   CONTAINER 2 BOUNDS
+   This is the fixed full-image area controlled by CSS.
    ========================================================= */
-.slideshow__slides::before {
+.slideshow__lane,
+.slideshow__chamber {
+  position: absolute;
+  top: var(--about-chamber-inset-top);
+  right: var(--about-chamber-inset-right);
+  bottom: var(--about-chamber-inset-bottom);
+  left: var(--about-chamber-inset-left);
+  border-radius: var(--about-chamber-radius);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Moving slide plane under Container 2 */
+.slideshow__lane {
+  z-index: 1;
+}
+
+.slideshow__lane-track {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Fixed blur logic of Container 2 */
+.slideshow__chamber {
+  z-index: 2;
+  backdrop-filter: blur(var(--about-chamber-blur));
+  -webkit-backdrop-filter: blur(var(--about-chamber-blur));
+  background: rgba(255, 255, 255, 0.018);
+  opacity: var(--about-chamber-opacity);
+}
+
+.slideshow__chamber-shell {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--about-chamber-shell-opacity);
+  background:
+    radial-gradient(
+      120% 90% at 50% 18%,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.07) 28%,
+      rgba(255, 255, 255, 0.025) 48%,
+      rgba(255, 255, 255, 0) 68%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      rgba(255, 255, 255, 0.035) 26%,
+      rgba(255, 255, 255, 0.07) 58%,
+      rgba(255, 255, 255, 0.018) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* =========================================================
+   CONTAINER 1 = PILL
+   ========================================================= */
+.slideshow__pill {
+  position: absolute;
+  inset: var(--about-pill-inset-y) var(--about-pill-inset-x);
+  z-index: 3;
+  border-radius: var(--about-pill-radius);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.slideshow__pill-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* =========================================================
+   SHARED IMAGE PLANES
+   ========================================================= */
+.slideshow__img {
+  position: absolute;
+  display: block;
+  object-fit: var(--about-stage-fit);
+  object-position: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform, opacity;
+  pointer-events: none;
+  transform-origin: center center;
+}
+
+/* Full-image moving plane under Container 2 */
+.slideshow__img--lane {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: translate3d(var(--about-travel-x), 0, 0) scale(0.4);
+  border-radius: inherit;
+}
+
+/* Clear pill image */
+.slideshow__img--pill {
+  top: calc(-1 * var(--about-pill-inset-y) + var(--about-pill-visual-inset-y));
+  left: calc(-1 * var(--about-pill-inset-x) + var(--about-pill-visual-inset-x));
+  width: calc(100% + (var(--about-pill-inset-x) * 2) - (var(--about-pill-visual-inset-x) * 2));
+  height: calc(100% + (var(--about-pill-inset-y) * 2) - (var(--about-pill-visual-inset-y) * 2));
+  opacity: 0;
+  transform: translate3d(var(--about-travel-x), 0, 0) scale(0.4);
+  border-radius: var(--about-pill-radius);
+}
+
+/* =========================================================
+   STAGE GLASS
+   ========================================================= */
+.slideshow__viewport::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 10;
   pointer-events: none;
   border-radius: inherit;
   border: var(--about-glass-border-width) solid var(--about-glass-border-color);
@@ -230,11 +308,11 @@
     var(--about-glass-border-shadow-outer);
 }
 
-.slideshow__slides::after {
+.slideshow__viewport::after {
   content: "";
   position: absolute;
   inset: var(--about-glass-sheen-inset);
-  z-index: 3;
+  z-index: 10;
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(
@@ -247,24 +325,31 @@
 }
 
 /* =========================================================
-   DESKTOP GLASS PILL
+   PILL GLASS
    ========================================================= */
-@media (min-width: 601px) {
-  .slideshow::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: var(--about-pill-inset-y) var(--about-pill-inset-x);
-    z-index: 4;
-    pointer-events: none;
-    border-radius: var(--about-pill-radius);
-    border: calc(var(--about-pill-enabled) * var(--about-pill-border-width)) solid var(--about-pill-border-color);
-    box-shadow:
-      inset 0 1px 0 var(--about-pill-shadow-inner-top),
-      inset 0 -1px 0 var(--about-pill-shadow-inner-bottom),
-      var(--about-pill-shadow-outer);
-    opacity: var(--about-pill-enabled);
-  }
+.slideshow__pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: inherit;
+  border: var(--about-pill-border-width) solid var(--about-pill-border-color);
+  box-shadow:
+    inset 0 1px 0 var(--about-pill-shadow-inner-top),
+    inset 0 -1px 0 var(--about-pill-shadow-inner-bottom),
+    var(--about-pill-shadow-outer);
+}
+
+/* =========================================================
+   LIVE STATE
+   ========================================================= */
+#aboutSlideshow:not(.is-live) .slideshow__dots {
+  opacity: 0.65;
+}
+
+#aboutSlideshow.is-live .slideshow__dots {
+  opacity: 1;
 }
 
 /* =========================================================
@@ -277,7 +362,7 @@
   transform: translateX(-50%);
   display: flex;
   gap: var(--about-dot-gap);
-  z-index: 5;
+  z-index: 20;
   padding: var(--about-dot-pad-y) var(--about-dot-pad-x);
   border-radius: 999px;
   backdrop-filter: blur(5px);
@@ -309,63 +394,53 @@
   background: var(--about-dot-active);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .slideshow__slide.is-animating,
-  .slideshow__dot,
-  .page-bg::before {
-    transition: none !important;
-  }
-}
-
-/* =========================================================
-   DESKTOP: sharp inside glass pill, tiny blur outside pill
-   append at bottom
-   ========================================================= */
 :root {
-  --about-pill-outside-blur: 2px;
-  --about-pill-outside-scale: 1.01;
-  --about-pill-sharp-fit: var(--about-desktop-fit);
+  --about-active-lane-opacity: 0.96;
 }
 
-@media (min-width: 601px) {
-  /* blurred base image */
-  .slideshow__slide .slideshow__img {
-    position: relative;
-    z-index: 1;
-    filter: blur(var(--about-pill-outside-blur));
-    transform: scale(var(--about-pill-outside-scale));
-  }
+/* Keep Container 2 image support stable and non-boxy */
+.slideshow__img--lane {
+  filter: none;
+}
 
-  /* sharp image only inside desktop pill */
-  .slideshow__slide .slideshow__bg {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    opacity: 1;
-    filter: none;
-    transform: none;
+/* Optional: make active Container 2 support feel a little softer under the pill */
+.slideshow__lane {
+  will-change: transform, opacity;
+}
 
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: var(--about-pill-sharp-fit);
+.slideshow__pill-track,
+.slideshow__lane-track {
+  transform: translateZ(0);
+}
+:root {
+  --about-active-lane-opacity: 0.96;
 
-    clip-path: inset(
-      var(--about-pill-inset-y)
-      var(--about-pill-inset-x)
-      round var(--about-pill-radius)
-    );
-  }
+  /* new timing split */
+  --about-lane-grow-delay-ms: 90ms;
+  --about-lane-grow-ms: 260ms;
+}
 
-  /* keep glass border / glass pill above the images */
-  .slideshow__slides::before,
-  .slideshow__slides::after,
-  .slideshow::before {
-    z-index: 4;
-  }
+/* keep lane support visually soft and aligned, not like a second hard box */
+.slideshow__img--lane {
+  filter: none;
+}
 
-  .slideshow__dots {
-    z-index: 5;
-  }
+.slideshow__lane,
+.slideshow__lane-track,
+.slideshow__pill-track {
+  transform: translateZ(0);
+}
+:root {
+  --about-travel-edge-pad: 18;
+  --about-travel-ms: 820ms;
+  --about-incoming-lane-opacity: 0.16;
+  --about-outgoing-travel-lane-opacity: 0.28;
+  --about-outgoing-end-lane-opacity: 0.06;
+}
+
+:root {
+  --about-travel-edge-pad: 18;
+  --about-travel-ms: 820ms;
+  --about-outgoing-travel-lane-opacity: 0.28;
+  --about-outgoing-end-lane-opacity: 0.06;
 }
